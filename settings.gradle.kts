@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "code-obfuscation"
 include(":app")
+include(":code-guard")
