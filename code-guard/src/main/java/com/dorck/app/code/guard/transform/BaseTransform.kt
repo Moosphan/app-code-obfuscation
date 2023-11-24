@@ -5,7 +5,7 @@ import com.android.build.api.transform.*
 import com.android.build.api.transform.TransformInvocation
 import com.android.build.gradle.internal.pipeline.TransformManager
 import com.dorck.app.code.guard.utils.IOUtils
-import org.gradle.api.Project
+import com.dorck.app.code.guard.utils.KLogger
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
@@ -23,7 +23,7 @@ import java.util.jar.JarOutputStream
  * @author Dorck
  * @since 2023/11/23
  */
-abstract class BaseTransform(val project: Project) : Transform() {
+abstract class BaseTransform() : Transform() {
     override fun transform(transformInvocation: TransformInvocation) {
         onTransformBefore(transformInvocation)
         super.transform(transformInvocation)
@@ -192,7 +192,7 @@ abstract class BaseTransform(val project: Project) : Transform() {
     }
 
     private fun log(message: String) {
-        project.logger.debug("[$TAG] $message")
+        KLogger.info("[$TAG] $message")
     }
 
     companion object {

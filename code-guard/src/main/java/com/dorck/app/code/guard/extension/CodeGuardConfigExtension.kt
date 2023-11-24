@@ -1,4 +1,4 @@
-package com.dorck.app.code.guard
+package com.dorck.app.code.guard.extension
 
 /**
  * The extension class for configuring plugin.
@@ -6,17 +6,18 @@ package com.dorck.app.code.guard
  * @author Dorck
  * @since 2023/11/23
  */
-open class CodeGuardConfigExtension {
-    var enable: Boolean = true
+open class CodeGuardConfigExtension: BasePluginExtension() {
     // Mapper rules.
     var mapper: String = ""
     // Used to configure your own code obfuscation dictionary
     var obfuscationDict: String? = ""
         get() = field?.replace("\\", "/") // Note: Fix path bugs on windows.
-    var logDebug: Boolean = true
-    var supportIncremental: Boolean = false
     // Configure the package paths for which you want to enhance obfuscation.
     var processingPackages: List<String> = emptyList()
+    // Whether to skip obfuscate jars.
+    var isSkipJars: Boolean = true
+    // Whether to skip obfuscate abstract classes.
+    var isSkipAbsClass: Boolean = false
 
     override fun toString(): String {
         return """
@@ -25,7 +26,9 @@ open class CodeGuardConfigExtension {
                 mapperFile: $mapper,
                 obfuscationDictionary: $obfuscationDict,
                 supportIncremental: $supportIncremental,
-                processingPackages: $processingPackages
+                processingPackages: $processingPackages,
+                isSkipJars: $isSkipJars,
+                isSkipAbsClass: $isSkipAbsClass
             }
         """.trimIndent()
     }

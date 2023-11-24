@@ -1,13 +1,13 @@
 package com.dorck.app.code.guard.transform
 
-import com.dorck.app.code.guard.CodeGuardConfigExtension
+import com.dorck.app.code.guard.extension.CodeGuardConfigExtension
 import org.gradle.api.Project
 import org.objectweb.asm.ClassVisitor
 
 class CodeGuardTransform(
     private val extension: CodeGuardConfigExtension,
-    project: Project
-) : BaseTransform(project) {
+    private val project: Project
+) : BaseTransform() {
 
     override fun getName(): String = TAG
 

@@ -1,0 +1,34 @@
+{
+  "fields": [
+    "a#public#Ljava/lang/String;",
+    "b#private#Ljava/lang/String;",
+    "c#protected#Ljava/lang/String;",
+    "d#private#Ljava/lang/String;",
+    "e#public#Ljava/lang/String;",
+    "f#protected#Ljava/lang/String;",
+    "g#public#Ljava/lang/String;",
+    "h#private#Ljava/lang/String;",
+    "i#protected#Ljava/lang/String;",
+    "j#private#Ljava/lang/String;",
+    "k#private#Ljava/lang/String;",
+    "l#private#Ljava/lang/String;"
+  ],
+  "methods": [
+    "android/util/Log#v#(Ljava/lang/String;Ljava/lang/String;)I",
+    "android/util/Log#v#(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I",
+    "android/util/Log#d#(Ljava/lang/String;Ljava/lang/String;)I",
+    "android/util/Log#d#(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I",
+    "android/util/Log#i#(Ljava/lang/String;Ljava/lang/String;)I",
+    "android/util/Log#i#(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I",
+    "android/util/Log#w#(Ljava/lang/String;Ljava/lang/String;)I",
+    "android/util/Log#w#(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I",
+    "android/util/Log#e#(Ljava/lang/String;Ljava/lang/String;)I",
+    "android/util/Log#e#(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I",
+    "android/util/Log#println#(ILjava/lang/String;Ljava/lang/String;)I",
+
+    "com/example/log/cleaner/util/LogUtil#d#(Ljava/lang/String;Ljava/lang/String;)V"
+  ],
+  "whitelist": [
+    "com/example/log/cleaner/util/LogUtil"
+  ]
+}
