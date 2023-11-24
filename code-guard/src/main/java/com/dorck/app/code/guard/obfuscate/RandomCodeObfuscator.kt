@@ -1,12 +1,11 @@
-package com.dorck.app.code.guard.config
+package com.dorck.app.code.guard.obfuscate
 
 import org.objectweb.asm.Opcodes
-import java.util.*
 
 /**
  * Used to randomly generate obfuscated codes.
  */
-object RandomCodeObfuscator {
+object RandomCodeObfuscator: AbsCodeObfuscator() {
     private const val CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     // The max chars length of filed or method name.
     private const val FIELD_NAME_MAX_LEN = 1
@@ -18,8 +17,6 @@ object RandomCodeObfuscator {
     private val ACCESS_TYPES = arrayListOf(Opcodes.ACC_PRIVATE, Opcodes.ACC_PROTECTED, Opcodes.ACC_PUBLIC)
     private val BASIC_TYPES = arrayListOf("B", "S", "I", "J", "F", "D", "C", "Z", "Ljava/lang/String;")
     private val METHOD_PARAM_TYPES = arrayListOf("(B)V", "(S)V", "(I)V", "(J)V", "(F)V", "(D)V", "(C)V", "(Z)V", "(Ljava/lang/String;)V")
-
-    private val random = Random()
 
     fun generateNextField(): FieldEntity {
         val name = generateRandomName(maxLength = FIELD_NAME_MAX_LEN)
@@ -35,11 +32,17 @@ object RandomCodeObfuscator {
         return MethodEntity(name, desc)
     }
 
-    /**
-     * 通过随机布尔值决定是否需要插入
-     */
-    fun shouldInsertElement(): Boolean {
-        return random.nextBoolean()
+    override fun nextFiled(): FieldEntity {
+        val name = generateRandomName(maxLength = FIELD_NAME_MAX_LEN)
+        val accessType = generateRandomAccess()
+        val type = generateRandomType()
+        return FieldEntity(name, accessType, type)
+    }
+
+    override fun nextMethod(): MethodEntity {
+        val name = generateRandomName(maxLength = FIELD_NAME_MAX_LEN)
+        val desc = generateRandomDescriptor()
+        return MethodEntity(name, desc)
     }
 
     /**
@@ -58,14 +61,14 @@ object RandomCodeObfuscator {
      * 随机生成数据类型
      */
     private fun generateRandomType(): String {
-        return BASIC_TYPES[random.nextInt(BASIC_TYPES.size - 1)]
+        return BASIC_TYPES[random.nextInt(BASIC_TYPES.size)]
     }
 
     /**
      * 随机生成访问权限
      */
     private fun generateRandomAccess(): Int {
-        return ACCESS_TYPES[random.nextInt(ACCESS_TYPES.size - 1)] + randomStaticAccess()
+        return ACCESS_TYPES[random.nextInt(ACCESS_TYPES.size)] + randomStaticAccess()
     }
 
     /**
@@ -108,6 +111,6 @@ object RandomCodeObfuscator {
      * L<类名>;: 对象引用类型，使用分号结尾，如 Ljava/lang/String;
      */
     private fun generateRandomDescriptor(): String {
-        return "(${BASIC_TYPES[random.nextInt(BASIC_TYPES.size - 1)]})V"
+        return "(${BASIC_TYPES[random.nextInt(BASIC_TYPES.size)]})V"
     }
 }

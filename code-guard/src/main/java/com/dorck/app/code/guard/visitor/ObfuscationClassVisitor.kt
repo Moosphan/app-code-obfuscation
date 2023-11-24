@@ -1,6 +1,6 @@
 package com.dorck.app.code.guard.visitor
 
-import com.dorck.app.code.guard.config.CodeObfuscationConfig
+import com.dorck.app.code.guard.obfuscate.CodeObfuscationConfig
 import com.dorck.app.code.guard.extension.CodeGuardConfigExtension
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.FieldVisitor
@@ -14,12 +14,12 @@ class ObfuscationClassVisitor(val extension: CodeGuardConfigExtension, api: Int,
     override fun visitField(
         access: Int,
         name: String,
-        descriptor: String?,
+        descriptor: String,
         signature: String?,
         value: Any?
     ): FieldVisitor? {
         // Ignore existing fields with the same name
-        if (CodeObfuscationConfig.isFieldExist(name, access)) {
+        if (CodeObfuscationConfig.isFieldExist(name, descriptor)) {
             return null
         }
         return super.visitField(access, name, descriptor, signature, value)

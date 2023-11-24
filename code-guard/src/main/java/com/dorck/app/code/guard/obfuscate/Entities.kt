@@ -1,4 +1,4 @@
-package com.dorck.app.code.guard.config
+package com.dorck.app.code.guard.obfuscate
 
 import com.google.gson.Gson
 import org.objectweb.asm.Opcodes
@@ -6,7 +6,7 @@ import org.objectweb.asm.Opcodes
 data class FieldEntity(
     val name: String,
     val access: Int,
-    val type: String
+    val type: String // Field descriptor
 ) {
     override fun toString(): String {
         return Gson().toJson(this)
