@@ -11,5 +11,5 @@ open class BasePluginExtension {
     // Whether to enable debugging logs.
     var logDebug: Boolean = true
     // Whether to support increment processing.
-    var supportIncremental: Boolean = false
+    var supportIncremental: Boolean = true
 }

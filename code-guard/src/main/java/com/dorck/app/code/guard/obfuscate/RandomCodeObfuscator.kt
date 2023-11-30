@@ -18,20 +18,6 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
     private val BASIC_TYPES = arrayListOf("B", "S", "I", "J", "F", "D", "C", "Z", "Ljava/lang/String;")
     private val METHOD_PARAM_TYPES = arrayListOf("(B)V", "(S)V", "(I)V", "(J)V", "(F)V", "(D)V", "(C)V", "(Z)V", "(Ljava/lang/String;)V")
 
-    fun generateNextField(): FieldEntity {
-        val name = generateRandomName(maxLength = FIELD_NAME_MAX_LEN)
-        val accessType = generateRandomAccess()
-        val type = generateRandomType()
-        return FieldEntity(name, accessType, type)
-    }
-
-    // 目前仅支持随机生成无返回值函数
-    fun generateNextMethod(): MethodEntity {
-        val name = generateRandomName(maxLength = FIELD_NAME_MAX_LEN)
-        val desc = generateRandomDescriptor()
-        return MethodEntity(name, desc)
-    }
-
     override fun nextFiled(): FieldEntity {
         val name = generateRandomName(maxLength = FIELD_NAME_MAX_LEN)
         val accessType = generateRandomAccess()
@@ -39,13 +25,14 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
         return FieldEntity(name, accessType, type)
     }
 
-    override fun nextMethod(): MethodEntity {
+    override fun nextMethod(): MethodEntity { // 目前仅支持随机生成无返回值函数
         val name = generateRandomName(maxLength = FIELD_NAME_MAX_LEN)
         val desc = generateRandomDescriptor()
         return MethodEntity(name, desc)
     }
 
     override fun nextCodeCall(): MethodEntity {
+        // 从生成的类中随机获取一个方法调用
         TODO("Not yet implemented")
     }
 

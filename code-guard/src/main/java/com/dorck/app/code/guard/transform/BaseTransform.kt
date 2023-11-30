@@ -23,10 +23,11 @@ import java.util.jar.JarOutputStream
  * @author Dorck
  * @since 2023/11/23
  */
-abstract class BaseTransform() : Transform() {
+abstract class BaseTransform : Transform() {
     override fun transform(transformInvocation: TransformInvocation) {
         onTransformBefore(transformInvocation)
         super.transform(transformInvocation)
+        realTransform(transformInvocation)
         onTransformAfter()
     }
 
@@ -39,6 +40,8 @@ abstract class BaseTransform() : Transform() {
     override fun getScopes(): MutableSet<in QualifiedContent.Scope> {
         return TransformManager.SCOPE_FULL_PROJECT
     }
+
+    protected abstract fun realTransform(transformInvocation: TransformInvocation)
 
     protected open fun onTransformBefore(transformInvocation: TransformInvocation) {
 
@@ -66,7 +69,7 @@ abstract class BaseTransform() : Transform() {
     // 3.根据输入文件树生成输出文件树
     // 4.更改输入侧.class字节码并保存
     // 5.将输入侧文件树内容复制到输出侧
-    private fun collectAndHandleDirectories(
+    protected fun collectAndHandleDirectories(
         dirInput: DirectoryInput,
         outputProvider: TransformOutputProvider,
         incremental: Boolean
@@ -141,7 +144,7 @@ abstract class BaseTransform() : Transform() {
         }
     }
 
-    private fun collectAndHandleJars(
+    protected fun collectAndHandleJars(
         input: JarInput,
         outputProvider: TransformOutputProvider,
         incremental: Boolean
@@ -163,7 +166,7 @@ abstract class BaseTransform() : Transform() {
      * 1.将jarInput内容全部复制到jarOutput
      * 2.遇到class文件则需要先执行ASM操作后再复制过去
      */
-    private fun handleJarsTransform(jarInput: File, jarOutput: File) {
+    protected fun handleJarsTransform(jarInput: File, jarOutput: File) {
         JarFile(jarInput).use { srcJarFile ->
             JarOutputStream(FileOutputStream(jarOutput)).use { destJarFileOs ->
                 val enumeration: Enumeration<JarEntry> = srcJarFile.entries()
@@ -175,7 +178,7 @@ abstract class BaseTransform() : Transform() {
                         // KLogger.info("Jar path: ${jarOutput.absolutePath}#${entry.name}")
                         if (isNeedProcessClass(entry.name)) { //如果是class文件
                             // 通过asm修改class文件并写入output
-                            val classReader = ClassReader(entryIs)
+                            val classReader = ClassReader(entryIs) // FIXME: 2023/11/30 ArrayIndexOutOfBoundsException
                             val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
                             val classVisitor = createClassVisitor(Opcodes.ASM9, classWriter)
                             classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)

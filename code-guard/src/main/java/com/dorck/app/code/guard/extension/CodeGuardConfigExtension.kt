@@ -14,8 +14,6 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
         get() = field?.replace("\\", "/") // Note: Fix path bugs on windows.
     // Configure the package paths for which you want to enhance obfuscation.
     var processingPackages: List<String> = emptyList()
-    // Whether to skip obfuscate jars.
-    var isSkipJars: Boolean = true
     // Whether to skip obfuscate abstract classes.
     var isSkipAbsClass: Boolean = false
     // Maximum number of methods in a class.
@@ -28,6 +26,10 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     // If enable, plugin will automatically generate a acceptable number of methods and fields
     // based on the specific circumstances of the current class.
     var isAutoAdapted: Boolean = true
+    // Generated java class name for code call.
+    var generatedClassName: String = ""
+    // Number of random methods generated in java class.
+    var generatedMethodCount: Int = 3
 
     override fun toString(): String {
         return """
@@ -37,7 +39,6 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
                 obfuscationDictionary: $obfuscationDict,
                 supportIncremental: $supportIncremental,
                 processingPackages: $processingPackages,
-                isSkipJars: $isSkipJars,
                 isSkipAbsClass: $isSkipAbsClass,
                 isAutoAdapted: $isAutoAdapted,
                 maxFieldCount: $maxFieldCount,

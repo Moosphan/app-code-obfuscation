@@ -11,7 +11,9 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 - 支持通用ASM插件的基础库下沉，降低后续插件开发成本
 
 ### Todo List
-- 提供更加灵活的配置项
+- 实现默认内置的类混淆功能
+- 实现方法内的随机代码混淆
+- 提供更加灵活的配置项（类、方法等混淆的随机性配置）
 - 混淆范围细化到函数级别
 - 多线程并行执行，优化混淆速度
 
