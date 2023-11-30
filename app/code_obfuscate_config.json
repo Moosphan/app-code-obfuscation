@@ -28,6 +28,11 @@
 
     "com/example/log/cleaner/util/LogUtil#d#(Ljava/lang/String;Ljava/lang/String;)V"
   ],
+  "codeBlock": [
+    "com/dorck/app/obfuscate/obfuscate/FunctionInnerObfuscatorSample#x#()V",
+    "com/dorck/app/obfuscate/obfuscate/FunctionInnerObfuscatorSample#y#(I)V",
+    "com/dorck/app/obfuscate/obfuscate/FunctionInnerObfuscatorSample#z#(J)V"
+  ],
   "whitelist": [
     "com/example/log/cleaner/util/LogUtil"
   ]

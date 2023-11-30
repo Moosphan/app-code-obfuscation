@@ -10,7 +10,7 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     // Mapper rules.
     var mapper: String = ""
     // Used to configure your own code obfuscation dictionary
-    var obfuscationDict: String? = ""
+    var obfuscationDict: String = ""
         get() = field?.replace("\\", "/") // Note: Fix path bugs on windows.
     // Configure the package paths for which you want to enhance obfuscation.
     var processingPackages: List<String> = emptyList()
@@ -22,6 +22,8 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     var maxMethodCount: Int = Int.MAX_VALUE
     // Maximum number of fields in a class.
     var maxFieldCount: Int = Int.MAX_VALUE
+    // The maximum number of lines of code allowed to be inserted within a method.
+    var maxCodeLineCount: Int = Int.MAX_VALUE
     // Whether to enable automatic adaptation.
     // If enable, plugin will automatically generate a acceptable number of methods and fields
     // based on the specific circumstances of the current class.

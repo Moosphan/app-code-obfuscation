@@ -13,6 +13,7 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 ### Todo List
 - 提供更加灵活的配置项
 - 混淆范围细化到函数级别
+- 多线程并行执行，优化混淆速度
 
 ### 配置项
 
@@ -48,11 +49,16 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
   ],
   "methods": [
     "com/example/util/LogUtil#v#(Ljava/lang/String;Ljava/lang/String;)V",
-    "com/example/util/LogUtil#v#(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I",
+    "com/example/util/LogUtil#v#(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V",
     "com/example/util/LogUtil#d#(Ljava/lang/String;Ljava/lang/String;)V",
-    "com/example/util/LogUtil#d#(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I",
+    "com/example/util/LogUtil#d#(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V",
     "com/example/util/LogUtil#i#(Ljava/lang/String;Ljava/lang/String;)V",
-    "com/example/util/LogUtil#i#(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V",
+    "com/example/util/LogUtil#i#(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V"
+  ],
+  "codeBlock": [
+    "com/dorck/app/obfuscate/obfuscate/FunctionInnerObfuscatorSample#x#()V",
+    "com/dorck/app/obfuscate/obfuscate/FunctionInnerObfuscatorSample#y#(I)V",
+    "com/dorck/app/obfuscate/obfuscate/FunctionInnerObfuscatorSample#z#(J)V"
   ],
   "whitelist": [
     "com/example/SampleActivity"
@@ -64,6 +70,11 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 
 - **fields**：即插入到类中的属性信息，由 `#` 分隔，从左到右依次代表属性名、属性访问修饰符类型、属性的类型（目前仅支持基本类型和 `String` 类型）
 - **methods**：即插入到类中的方法信息，由 `#` 分隔，从左到右依次代表方法名、方法描述符（目前仅支持无值返回，即 `void` 类型）
+- **codeBlock**：针对于方法级别，即在方法中随机插入若干外部指定类的静态方法调用。主要注意以下规则：
+  - 这个类可以自己在项目中自由创建，为防止开启proguard代码混淆后被优化，需要在 `proguard-rules.pro` 中 **keep** 住该类；
+  - 类中仅可以包含 **`public static void`** 修饰的方法，不能有返回值；
+  - 该类中方法参数只能是无参或者单个参数，且参数类型目前仅支持 `int` 和 `long`；
+  - 插件执行方法内代码混淆时的随机性取决于该类中定义方法的随机性（如你可以定义足够多的无意义方法）
 - **whiteList**：白名单配置，可以确保白名单内的类不会被插入混淆代码
 
 基于以上规则，你就可以自由插入自己的定制代码了。如果你没有在 `app/build.gradle` 中设置 `obfuscationDict`，则默认由插件来自动帮你生成随机代码。

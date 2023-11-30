@@ -15,8 +15,8 @@ gradlePlugin {
         create("CodeGuardPlugin") {
             // Note: We need to make here id as same as module name, or
             // it will publish two different plugins.
-            id = "cn.dorck.log.cropper"
-            implementationClass = "com.dorck.log.cropper.plugin.MethodCallingCropPlugin"
+            id = "cn.dorck.code.guarder"
+            implementationClass = "com.dorck.app.code.guard.CodeGuardPlugin"
             displayName = "Code-Guard-Plugin"
             description = "A plugin for code obfuscation."
         }

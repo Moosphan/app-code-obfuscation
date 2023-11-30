@@ -5,10 +5,11 @@ package com.dorck.app.code.guard.obfuscate
  * @author Dorck
  * @since 2023/11/24
  */
-object CodeObfuscationConfig : AbsCodeObfuscator() {
+object CustomCodeObfuscator : AbsCodeObfuscator() {
     private const val SEPARATOR = "#"
     val mFieldsList = mutableListOf<FieldEntity>()
     val mMethodsList = mutableListOf<MethodEntity>()
+    val mCodeCallList = mutableListOf<MethodEntity>()
     // 避免被混淆的白名单(仅支持到类级别)
     val mWhitelist = mutableListOf<String>()
 
@@ -32,5 +33,10 @@ object CodeObfuscationConfig : AbsCodeObfuscator() {
     override fun nextMethod(): MethodEntity {
         val randomIndex = random.nextInt(mMethodsList.size)
         return mMethodsList[randomIndex]
+    }
+
+    override fun nextCodeCall(): MethodEntity {
+        val randomIndex = random.nextInt(mCodeCallList.size)
+        return mCodeCallList[randomIndex]
     }
 }

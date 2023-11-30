@@ -45,6 +45,10 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
         return MethodEntity(name, desc)
     }
 
+    override fun nextCodeCall(): MethodEntity {
+        TODO("Not yet implemented")
+    }
+
     /**
      * 随机生成属性名or类名
      */
