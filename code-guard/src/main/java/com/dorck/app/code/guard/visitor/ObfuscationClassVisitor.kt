@@ -58,11 +58,11 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
                 insertRandomField(obfuscator)
             }
         }
-//        if (mMethodInsertionCount <= mMaxMethodsSize) {
-//            repeat(mMaxMethodsSize - mMethodInsertionCount) {
-//                insertRandomMethod(obfuscator)
-//            }
-//        }
+        if (mMethodInsertionCount <= mMaxMethodsSize) {
+            repeat(mMaxMethodsSize - mMethodInsertionCount) {
+                insertRandomMethod(obfuscator)
+            }
+        }
         super.visitEnd()
     }
 
@@ -88,23 +88,23 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
         signature: String?,
         exceptions: Array<out String>?
     ): MethodVisitor? {
-        return super.visitMethod(access, name, descriptor, signature, exceptions)
+//        return super.visitMethod(access, name, descriptor, signature, exceptions)
 //        // 如果设置跳过抽象类或者构造函数，则直接返回
-//        if ((isAbsClz && extension.isSkipAbsClass) || isConstructor(name!!, descriptor!!)) {
-//            return super.visitMethod(access, name, descriptor, signature, exceptions)
-//        }
-//        KLogger.error("visitMethod >> $name => $descriptor")
-//        // Start insert empty methods in cur class.
-//        val obfuscator = CodeObfuscatorFactory.getCodeObfuscator(extension)
-//        if (obfuscator.shouldInsertElement() && mMethodInsertionCount < mMaxMethodsSize) {
-//            // 保证原有函数可用
-//            val defaultMethodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions)
-//            return insertRandomMethod(obfuscator) ?: defaultMethodVisitor
-//        }
-//        // 注意插入的方法不需要执行函数内的代码插入
-//        mClassMethods.add(MethodEntity(name, descriptor, access))
-//        val curMethodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions)
-//        return ObfuscationMethodVisitor(extension.maxCodeLineCount, extension.isAutoAdapted, obfuscator, api, curMethodVisitor)
+        if ((isAbsClz && extension.isSkipAbsClass) || isConstructor(name!!, descriptor!!)) {
+            return super.visitMethod(access, name, descriptor, signature, exceptions)
+        }
+        KLogger.error("visitMethod >> $name => $descriptor")
+        // Start insert empty methods in cur class.
+        val obfuscator = CodeObfuscatorFactory.getCodeObfuscator(extension)
+        if (obfuscator.shouldInsertElement() && mMethodInsertionCount < mMaxMethodsSize) {
+            // 保证原有函数可用
+            val defaultMethodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions)
+            return insertRandomMethod(obfuscator) ?: defaultMethodVisitor
+        }
+        // 注意插入的方法不需要执行函数内的代码插入
+        mClassMethods.add(MethodEntity(name, descriptor, access))
+        val curMethodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions)
+        return ObfuscationMethodVisitor(extension.maxCodeLineCount, extension.isAutoAdapted, obfuscator, api, curMethodVisitor)
     }
 
     private fun insertRandomField(obfuscator: IAppCodeObfuscator): FieldVisitor? {
@@ -134,16 +134,23 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
         // 检查是否存在同名的方法，避免重复插入
         if (!isMethodExist(randomMethod.name, randomMethod.desc)) {
             KLogger.error("Start to insert random method: $randomMethod")
-            mFieldInsertionCount++
+            mMethodInsertionCount++
             mClassMethods.add(randomMethod)
             // Insert random method.
-            return cv.visitMethod(
+            // FIXME 12/04: Absent Code attribute in method that is not native or abstract
+            val insertMethodVisitor = cv.visitMethod(
                 randomMethod.access,
                 randomMethod.name,
                 randomMethod.desc,
                 null,
                 null
             )
+            insertMethodVisitor.visitCode()
+            insertMethodVisitor.visitInsn(Opcodes.RETURN)
+            insertMethodVisitor.visitMaxs(1, 1) // 设置栈的最大深度和局部变量的最大索引
+            insertMethodVisitor.visitEnd()
+            KLogger.error("Finished insert random method: ${randomMethod.name}")
+            return insertMethodVisitor
         }
         return null
     }

@@ -19,7 +19,7 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
 
     private val ACCESS_TYPES = arrayListOf(Opcodes.ACC_PRIVATE, Opcodes.ACC_PROTECTED, Opcodes.ACC_PUBLIC)
     private val BASIC_TYPES = arrayListOf("B", "S", "I", "J", "F", "D", "C", "Z", "Ljava/lang/String;")
-    private val METHOD_PARAM_TYPES = arrayListOf("(B)V", "(S)V", "(I)V", "(J)V", "(F)V", "(D)V", "(C)V", "(Z)V", "(Ljava/lang/String;)V")
+    private val METHOD_PARAM_TYPES = arrayListOf("()V", "(B)V", "(S)V", "(I)V", "(J)V", "(F)V", "(D)V", "(C)V", "(Z)V", "(Ljava/lang/String;)V")
     // 用于插入代码调用的目标类(可通过插件自定义或使用默认策略)
     private var mClassEntity: SimpleClassEntity? = null
 
