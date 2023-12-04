@@ -26,7 +26,7 @@ fun Project.getPackageName(): String? =
     android().defaultConfig.applicationId
 
 fun Project.extractPackageFromSourceSet(): String? {
-    val sourceSet = the<SourceSetContainer>()
+    val sourceSet = android().sourceSets
     val main = sourceSet["main"]
-    return main.allJava.single().parentFile.relativeTo(main.java.srcDirs.first()).path.replace(File.separator, ".")
+    return main.java.srcDirs.single().relativeTo(main.java.srcDirs.first()).path.replace(File.separator, ".")
 }

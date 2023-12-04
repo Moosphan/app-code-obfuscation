@@ -25,6 +25,10 @@ object CustomCodeObfuscator : AbsCodeObfuscator() {
         return false
     }
 
+    override fun initialize() {
+        // TODO: 解析json配置文件
+    }
+
     override fun nextFiled(): FieldEntity {
         val randomIndex = random.nextInt(mFieldsList.size)
         return mFieldsList[randomIndex]

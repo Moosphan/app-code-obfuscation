@@ -1,4 +1,4 @@
-package com.dorck.app.obfuscate.obfuscate;
+package com.dorck.app.obfuscate;
 
 /**
  * Used to randomly generate code blocks inside methods.

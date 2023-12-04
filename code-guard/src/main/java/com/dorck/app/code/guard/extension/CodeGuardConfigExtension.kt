@@ -1,5 +1,7 @@
 package com.dorck.app.code.guard.extension
 
+import com.dorck.app.code.guard.config.AppCodeGuardConfig
+
 /**
  * The extension class for configuring plugin.
  * Note: We need to make sure this class is open to the outside world.
@@ -15,11 +17,11 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     // Configure the package paths for which you want to enhance obfuscation.
     var processingPackages: List<String> = emptyList()
     // Whether to skip obfuscate abstract classes.
-    var isSkipAbsClass: Boolean = false
+    var isSkipAbsClass: Boolean = true
     // Maximum number of methods in a class.
-    var maxMethodCount: Int = Int.MAX_VALUE
+    var maxMethodCount: Int = AppCodeGuardConfig.MAX_METHOD_COUNT
     // Maximum number of fields in a class.
-    var maxFieldCount: Int = Int.MAX_VALUE
+    var maxFieldCount: Int = AppCodeGuardConfig.MAX_FIELD_COUNT
     // The maximum number of lines of code allowed to be inserted within a method.
     var maxCodeLineCount: Int = Int.MAX_VALUE
     // Whether to enable automatic adaptation.
@@ -30,6 +32,8 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     var generatedClassName: String = ""
     // Number of random methods generated in java class.
     var generatedMethodCount: Int = 3
+    // Exclude rules which you don't want to obfuscate.
+    var excludeRules: List<String> = emptyList()
 
     override fun toString(): String {
         return """
@@ -42,7 +46,10 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
                 isSkipAbsClass: $isSkipAbsClass,
                 isAutoAdapted: $isAutoAdapted,
                 maxFieldCount: $maxFieldCount,
-                maxMethodCount: $maxMethodCount
+                maxMethodCount: $maxMethodCount,
+                generatedClassName: $generatedClassName,
+                generatedMethodCount: $generatedMethodCount,
+                excludeRules: $excludeRules
             }
         """.trimIndent()
     }

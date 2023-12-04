@@ -9,6 +9,6 @@ abstract class AbsCodeObfuscator : IAppCodeObfuscator {
      * 通过随机布尔值决定是否需要插入
      */
     override fun shouldInsertElement(): Boolean {
-        return random.nextBoolean()
+        return /*random.nextBoolean()*/ true
     }
 }

@@ -1,5 +1,6 @@
 package com.dorck.app.code.guard.obfuscate
 
+import com.dorck.app.code.guard.config.AppCodeGuardConfig
 import org.objectweb.asm.Opcodes
 
 /**
@@ -13,10 +14,24 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
     private const val FIELD_NAME_PREFIX = "v"
     private const val METHOD_NAME_PREFIX = "m"
     private const val BASE_NAME_PREFIX = ""
+    private val LOWERCASE_LETTERS = ('a'..'z').toList()
+    private val CAPITAL_LETTERS = ('A'..'Z').toList()
 
     private val ACCESS_TYPES = arrayListOf(Opcodes.ACC_PRIVATE, Opcodes.ACC_PROTECTED, Opcodes.ACC_PUBLIC)
     private val BASIC_TYPES = arrayListOf("B", "S", "I", "J", "F", "D", "C", "Z", "Ljava/lang/String;")
     private val METHOD_PARAM_TYPES = arrayListOf("(B)V", "(S)V", "(I)V", "(J)V", "(F)V", "(D)V", "(C)V", "(Z)V", "(Ljava/lang/String;)V")
+    // 用于插入代码调用的目标类(可通过插件自定义或使用默认策略)
+    private var mClassEntity: SimpleClassEntity? = null
+
+    override fun initialize() {
+        if (AppCodeGuardConfig.isEnableCodeGenInMethod) {
+            if (mClassEntity == null) {
+                val clzName = randomShortClassName()
+                val packageName = randomPackageName()
+                mClassEntity = SimpleClassEntity(packageName, clzName, generateMethodList(clzName))
+            }
+        }
+    }
 
     override fun nextFiled(): FieldEntity {
         val name = generateRandomName(maxLength = FIELD_NAME_MAX_LEN)
@@ -31,13 +46,17 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
         return MethodEntity(name, desc)
     }
 
-    override fun nextCodeCall(): MethodEntity {
+    override fun nextCodeCall(): MethodEntity? {
         // 从生成的类中随机获取一个方法调用
-        TODO("Not yet implemented")
+        if (mClassEntity == null) {
+            return null
+        }
+        val methodCalls = mClassEntity?.methods ?: mutableListOf()
+        return methodCalls[random.nextInt(methodCalls.size)]
     }
 
     /**
-     * 随机生成属性名or类名
+     * 随机生成属性名 or 方法名
      */
     private fun generateRandomName(prefix: String = BASE_NAME_PREFIX, maxLength: Int = 6): String {
         val sb = StringBuilder(prefix)
@@ -60,6 +79,24 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
      */
     private fun generateRandomAccess(): Int {
         return ACCESS_TYPES[random.nextInt(ACCESS_TYPES.size)] + randomStaticAccess()
+    }
+
+    /**
+     * 生成随机的类名，format: 两位字符(大写+小写)
+     */
+    private fun randomShortClassName(): String {
+        val first = CAPITAL_LETTERS.random()
+        val second = LOWERCASE_LETTERS.random()
+        return "$first$second"
+    }
+
+    /**
+     * 生成随机包名，format: x.y.z
+     */
+    private fun randomPackageName(): String {
+        val packageDepth = (2..4).random() // 随机选择包深度，可以根据需要调整范围
+        val alphabet = ('a'..'z').toList()
+        return List(packageDepth) { alphabet.random().toString() }.joinToString(".")
     }
 
     /**
@@ -103,5 +140,26 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
      */
     private fun generateRandomDescriptor(): String {
         return "(${BASIC_TYPES[random.nextInt(BASIC_TYPES.size)]})V"
+    }
+
+    /**
+     * 随机生成指定数量的空方法
+     */
+    private fun generateMethodList(className: String = "", count: Int = 3): List<MethodEntity> {
+        val genMethodList = mutableListOf<MethodEntity>()
+        repeat(count) {
+            // 注意这个类生成的方法必须是 public static 类型的
+            val name = generateRandomName(maxLength = FIELD_NAME_MAX_LEN)
+            val desc = generateRandomDescriptor()
+            val methodEntity = MethodEntity(
+                name,
+                desc,
+                className = className,
+                access = Opcodes.ACC_PUBLIC,
+                isStatic = true
+            )
+            genMethodList.add(methodEntity)
+        }
+        return genMethodList
     }
 }

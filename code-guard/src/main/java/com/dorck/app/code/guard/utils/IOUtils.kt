@@ -1,9 +1,7 @@
 package com.dorck.app.code.guard.utils
 
-import java.io.ByteArrayOutputStream
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
+import java.io.*
+import java.nio.channels.FileChannel
 
 object IOUtils {
     @Throws(IOException::class)
@@ -34,5 +32,24 @@ object IOUtils {
             count += n.toLong()
         }
         return count
+    }
+
+    fun copyFile(source: File, destination: File) {
+        var sourceChannel: FileChannel? = null
+        var destinationChannel: FileChannel? = null
+        try {
+            sourceChannel = FileInputStream(source).channel
+            destinationChannel = FileOutputStream(destination).channel
+            destinationChannel.transferFrom(sourceChannel, 0, sourceChannel.size())
+        } catch (e: IOException) {
+            e.printStackTrace()
+        } finally {
+            try {
+                sourceChannel?.close()
+                destinationChannel?.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
     }
 }

@@ -55,8 +55,8 @@ abstract class BaseTransform : Transform() {
      * 对外暴露的口子，用于处理拦截的情况(如果返回false，则不处理该字节码，默认返回true)
      * 常见场景: class白名单、设定处理的包名范围等
      */
-    protected fun isNeedProcessClass(clzPath: String): Boolean {
-        return clzPath.isNotEmpty()
+    protected open fun isNeedProcessClass(clzPath: String): Boolean {
+        return clzPath.isNotEmpty() && clzPath.endsWith(".class")
     }
 
     /**
@@ -178,7 +178,7 @@ abstract class BaseTransform : Transform() {
                         // KLogger.info("Jar path: ${jarOutput.absolutePath}#${entry.name}")
                         if (isNeedProcessClass(entry.name)) { //如果是class文件
                             // 通过asm修改class文件并写入output
-                            val classReader = ClassReader(entryIs) // FIXME: 2023/11/30 ArrayIndexOutOfBoundsException
+                            val classReader = ClassReader(entryIs)
                             val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
                             val classVisitor = createClassVisitor(Opcodes.ASM9, classWriter)
                             classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)
