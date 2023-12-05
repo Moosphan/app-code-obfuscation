@@ -88,22 +88,19 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
         signature: String?,
         exceptions: Array<out String>?
     ): MethodVisitor? {
-//        return super.visitMethod(access, name, descriptor, signature, exceptions)
-//        // 如果设置跳过抽象类或者构造函数，则直接返回
+        // 如果设置跳过抽象类或者构造函数，则直接返回
         if ((isAbsClz && extension.isSkipAbsClass) || isConstructor(name!!, descriptor!!)) {
             return super.visitMethod(access, name, descriptor, signature, exceptions)
         }
-        KLogger.error("visitMethod >> $name => $descriptor")
+        val curMethodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions)
+        mClassMethods.add(MethodEntity(name, descriptor, access))
         // Start insert empty methods in cur class.
         val obfuscator = CodeObfuscatorFactory.getCodeObfuscator(extension)
-        if (obfuscator.shouldInsertElement() && mMethodInsertionCount < mMaxMethodsSize) {
+        if (obfuscator.shouldInsertElement() && mMethodInsertionCount <= mMaxMethodsSize) {
             // 保证原有函数可用
-            val defaultMethodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions)
-            return insertRandomMethod(obfuscator) ?: defaultMethodVisitor
+            insertRandomMethod(obfuscator)
         }
         // 注意插入的方法不需要执行函数内的代码插入
-        mClassMethods.add(MethodEntity(name, descriptor, access))
-        val curMethodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions)
         return ObfuscationMethodVisitor(extension.maxCodeLineCount, extension.isAutoAdapted, obfuscator, api, curMethodVisitor)
     }
 
@@ -129,16 +126,15 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
     }
 
     private fun insertRandomMethod(obfuscator: IAppCodeObfuscator): MethodVisitor? {
-        KLogger.error("visitMethod >> start insert method, progress: [${mMethodInsertionCount+1}/$mMaxMethodsSize]")
+        KLogger.info("visitMethod >> start insert method, progress: [${mMethodInsertionCount+1}/$mMaxMethodsSize]")
         val randomMethod = obfuscator.nextMethod()
         // 检查是否存在同名的方法，避免重复插入
         if (!isMethodExist(randomMethod.name, randomMethod.desc)) {
-            KLogger.error("Start to insert random method: $randomMethod")
+            KLogger.info("Start to insert random method: $randomMethod")
             mMethodInsertionCount++
             mClassMethods.add(randomMethod)
             // Insert random method.
-            // FIXME 12/04: Absent Code attribute in method that is not native or abstract
-            val insertMethodVisitor = cv.visitMethod(
+            val insertMethodVisitor = super.visitMethod(
                 randomMethod.access,
                 randomMethod.name,
                 randomMethod.desc,
@@ -149,7 +145,6 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
             insertMethodVisitor.visitInsn(Opcodes.RETURN)
             insertMethodVisitor.visitMaxs(1, 1) // 设置栈的最大深度和局部变量的最大索引
             insertMethodVisitor.visitEnd()
-            KLogger.error("Finished insert random method: ${randomMethod.name}")
             return insertMethodVisitor
         }
         return null

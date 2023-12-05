@@ -1,5 +1,7 @@
 package com.dorck.app.code.guard.visitor
 import com.dorck.app.code.guard.obfuscate.IAppCodeObfuscator
+import com.dorck.app.code.guard.obfuscate.MethodEntity
+import com.dorck.app.code.guard.utils.KLogger
 import org.objectweb.asm.*;
 
 class ObfuscationMethodVisitor(
@@ -13,13 +15,18 @@ class ObfuscationMethodVisitor(
     @Volatile
     private var isNeedInsertion = false
 
+    private var mCurCall: MethodEntity? = null
+
     override fun visitCode() {
+        KLogger.error("visitCode...")
         super.visitCode()
         // 随机判断是否插入混淆方法
         isNeedInsertion = shouldInsertConfusionMethod()
         if (isNeedInsertion) {
             val randomMethodCall = obfuscator.nextCodeCall()
+            KLogger.error("visitCode >> randomMethodCall: ${randomMethodCall ?: "null"}")
             randomMethodCall?.let {
+                this.mCurCall = randomMethodCall
                 val methodName = randomMethodCall.name
                 val methodDesc = randomMethodCall.desc
                 val ownerClz = randomMethodCall.className
@@ -38,7 +45,7 @@ class ObfuscationMethodVisitor(
 
     override fun visitInsn(opcode: Int) {
         // 在方法体末尾插入 RETURN 指令，表示方法结束
-        if (isNeedInsertion) {
+        if (isNeedInsertion && mCurCall != null) {
             if (opcode == Opcodes.RETURN) {
                 super.visitVarInsn(Opcodes.RETURN, 0)
             }
@@ -56,6 +63,6 @@ class ObfuscationMethodVisitor(
     private fun shouldInsertConfusionMethod(): Boolean {
         // 随机判断是否插入混淆方法，可以根据需求修改
 //        return Math.random() < 0.5
-        return false
+        return true
     }
 }
