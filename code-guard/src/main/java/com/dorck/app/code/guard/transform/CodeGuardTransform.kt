@@ -22,6 +22,7 @@ class CodeGuardTransform(
     override fun onTransformBefore(transformInvocation: TransformInvocation) {
         KLogger.debug = extension.logDebug
         KLogger.info("onTransformBefore, extension: $extension")
+        AppCodeGuardConfig.readConfigs()
     }
 
     override fun realTransform(transformInvocation: TransformInvocation) {

@@ -22,18 +22,22 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     var maxMethodCount: Int = AppCodeGuardConfig.MAX_METHOD_COUNT
     // Maximum number of fields in a class.
     var maxFieldCount: Int = AppCodeGuardConfig.MAX_FIELD_COUNT
+    // Whether to enable method obfuscation.
+    var methodObfuscateEnable: Boolean = true
     // The maximum number of lines of code allowed to be inserted within a method.
     var maxCodeLineCount: Int = Int.MAX_VALUE
     // Whether to enable automatic adaptation.
     // If enable, plugin will automatically generate a acceptable number of methods and fields
     // based on the specific circumstances of the current class.
     var isAutoAdapted: Boolean = true
+    // Generated java class package name for code call.
+    var generatedClassPkg: String = ""
     // Generated java class name for code call.
     var generatedClassName: String = ""
     // Number of random methods generated in java class.
     var generatedMethodCount: Int = 3
     // Exclude rules which you don't want to obfuscate.
-    var excludeRules: List<String> = emptyList()
+    var excludeRules: HashSet<String> = HashSet()
 
     override fun toString(): String {
         return """
@@ -47,6 +51,9 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
                 isAutoAdapted: $isAutoAdapted,
                 maxFieldCount: $maxFieldCount,
                 maxMethodCount: $maxMethodCount,
+                methodObfuscateEnable: $methodObfuscateEnable,
+                maxCodeLineCount: $maxCodeLineCount,
+                generatedClassPkg: $generatedClassPkg,
                 generatedClassName: $generatedClassName,
                 generatedMethodCount: $generatedMethodCount,
                 excludeRules: $excludeRules

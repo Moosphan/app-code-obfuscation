@@ -1,10 +1,15 @@
 package com.dorck.app.code.guard.task
 
 import com.dorck.app.code.guard.config.AppCodeGuardConfig
+import com.dorck.app.code.guard.extension.CodeGuardConfigExtension
+import com.dorck.app.code.guard.obfuscate.CodeObfuscatorFactory
+import com.dorck.app.code.guard.utils.CodeGenerator
+import com.dorck.app.code.guard.utils.KLogger
 import com.dorck.app.code.guard.utils.getPackageName
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.gradle.kotlin.dsl.get
 import java.io.File
 
 abstract class GenRandomClassTask : DefaultTask() {
@@ -14,33 +19,24 @@ abstract class GenRandomClassTask : DefaultTask() {
     @TaskAction
     fun generateClass() {
         project.logger.error("Start generate class...")
-        // How to get namespace?
-        val packageName = project.getPackageName() ?: "com.x.y.z"
+        val appID = project.getPackageName() ?: "com.x.y.z"
+        // Inject applicationId into global configs.
+        AppCodeGuardConfig.configApplicationId(appID)
         // Note: Need to keep this generated class in proguard rules.
         // TODO: 支持可配置[类名、方法数、包名]，根据方法配置项列表生成
-        val className = "Tt"
-        val classContent = """
-            package $packageName;
-            
-            public class $className {
-            
-                public static void x() {
-                    
-                }
-            
-                public static void y(int i) {
-                    
-                }
-            
-                public static void z(long k) {
-                    
-                }
-            }
-        """.trimIndent()
+        val extension = project.extensions.findByType(CodeGuardConfigExtension::class.java)
+        val obfuscator = CodeObfuscatorFactory.getCodeObfuscator(extension!!)
+        obfuscator.initialize()
+        val classEntity = obfuscator.getCurClassEntity() ?: throw IllegalStateException("The random class generation failed.")
+        val className = classEntity.className
+        // How to get namespace?
+        val packageName = classEntity.pkgName
+        val genJavaCode = CodeGenerator.generateJavaClass(classEntity)
 
         val outputFile = File(outputDir, "${packageName.replace('.', '/')}/$className.java")
         outputFile.parentFile.mkdirs()
-        outputFile.writeText(classContent)
+        outputFile.writeText(genJavaCode)
+        project.logger.error("Random java class code generation: $genJavaCode")
         AppCodeGuardConfig.configJavaCodeGenPath(outputFile.absolutePath)
         project.logger.error("[$className.java] generated succeed: ${outputFile.absolutePath}")
     }

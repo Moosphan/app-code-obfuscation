@@ -52,4 +52,20 @@ object IOUtils {
             }
         }
     }
+
+    fun deleteDirectory(directory: File?) {
+        if (directory == null || !directory.exists()) {
+            return
+        }
+        if (directory.isDirectory) {
+            val files = directory.listFiles()
+            if (files != null) {
+                for (file in files) {
+                    deleteDirectory(file)
+                }
+            }
+        }
+        // 删除空目录或文件
+        directory.delete()
+    }
 }

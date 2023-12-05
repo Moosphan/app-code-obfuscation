@@ -25,6 +25,8 @@ object CustomCodeObfuscator : AbsCodeObfuscator() {
         return false
     }
 
+    override var mClassEntity: SimpleClassEntity? = null
+
     override fun initialize() {
         // TODO: 解析json配置文件
     }

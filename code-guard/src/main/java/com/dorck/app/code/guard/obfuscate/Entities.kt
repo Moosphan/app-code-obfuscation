@@ -37,6 +37,8 @@ data class MethodEntity(
     }
 }
 
+data class ParameterEntity(val type: String, val name: String)
+
 // 插入代码的目标类模型
 data class SimpleClassEntity(
     val pkgName: String,        // 相对包名，实际上是[applicationId + pkgName]

@@ -1,4 +1,5 @@
 package com.dorck.app.code.guard.visitor
+
 import com.dorck.app.code.guard.obfuscate.IAppCodeObfuscator
 import com.dorck.app.code.guard.obfuscate.MethodEntity
 import com.dorck.app.code.guard.utils.KLogger
@@ -30,13 +31,22 @@ class ObfuscationMethodVisitor(
                 val methodName = randomMethodCall.name
                 val methodDesc = randomMethodCall.desc
                 val ownerClz = randomMethodCall.className
-
-                // 插入混淆方法调用
+//                pushDefaultConstToStack(methodDesc)
+//                // 插入混淆方法调用
+//                mv.visitMethodInsn(
+//                    Opcodes.INVOKESTATIC,
+//                    ownerClz,
+//                    methodName,
+//                    methodDesc,
+//                    false
+//                )
+                // sample
+                mv.visitInsn(Opcodes.ICONST_0)
                 mv.visitMethodInsn(
                     Opcodes.INVOKESTATIC,
-                    ownerClz,
-                    methodName,
-                    methodDesc,
+                    "com/dorck/app/obfuscate/a/b/e/TestCall",
+                    "make",
+                    "(I)V",
                     false
                 )
             }
@@ -64,5 +74,25 @@ class ObfuscationMethodVisitor(
         // 随机判断是否插入混淆方法，可以根据需求修改
 //        return Math.random() < 0.5
         return true
+    }
+
+    /**
+     * For methods with parameters, default parameter values need to be pushed to the stack.
+     */
+    private fun pushDefaultConstToStack(descriptor: String) {
+        val paramDesc = descriptor.substringAfter('(').substringBefore(')')
+        KLogger.info("pushDefaultConstToStack, param type: $paramDesc")
+        when (paramDesc) {
+            "I" -> mv.visitLdcInsn(0) // Default value for int
+            "F" -> mv.visitLdcInsn(0.0f) // Default value for float
+            "D" -> mv.visitLdcInsn(0.0) // Default value for double
+            "Z" -> mv.visitLdcInsn(false) // Default value for boolean
+            "C" -> mv.visitLdcInsn('\u0000') // Default value for char
+            "Ljava/lang/String;" -> mv.visitLdcInsn("DefaultString") // Default value for String
+            "" -> { // No params
+                // do nothing
+            }
+            else -> throw IllegalArgumentException("Unsupported parameter type: $descriptor")
+        }
     }
 }

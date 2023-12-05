@@ -9,7 +9,7 @@ import java.io.File
  * @since 2023/11/24
  */
 object CodeObfuscatorFactory {
-    fun getCodeObfuscator(extension: CodeGuardConfigExtension): IAppCodeObfuscator {
+    fun getCodeObfuscator(extension: CodeGuardConfigExtension): AbsCodeObfuscator {
         val obfuscationDisc = extension.obfuscationDict
         if (obfuscationDisc.isNotEmpty() && checkFileIfExist(obfuscationDisc)) {
             return CustomCodeObfuscator
@@ -17,7 +17,7 @@ object CodeObfuscatorFactory {
         return RandomCodeObfuscator
     }
 
-    private fun checkFileIfExist(path: String): Boolean {
+    fun checkFileIfExist(path: String): Boolean {
         val file: File = File(path)
         return file.exists()
     }

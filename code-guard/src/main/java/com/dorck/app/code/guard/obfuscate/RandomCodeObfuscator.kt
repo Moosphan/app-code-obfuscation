@@ -21,14 +21,29 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
     private val BASIC_TYPES = arrayListOf("B", "S", "I", "J", "F", "D", "C", "Z", "Ljava/lang/String;")
     private val METHOD_PARAM_TYPES = arrayListOf("()V", "(B)V", "(S)V", "(I)V", "(J)V", "(F)V", "(D)V", "(C)V", "(Z)V", "(Ljava/lang/String;)V")
     // 用于插入代码调用的目标类(可通过插件自定义或使用默认策略)
-    private var mClassEntity: SimpleClassEntity? = null
+    override var mClassEntity: SimpleClassEntity? = null
 
     override fun initialize() {
-        if (AppCodeGuardConfig.isEnableCodeGenInMethod) {
+        if (AppCodeGuardConfig.isEnableCodeObfuscateInMethod) {
             if (mClassEntity == null) {
-                val clzName = randomShortClassName()
-                val packageName = randomPackageName()
-                mClassEntity = SimpleClassEntity(packageName, clzName, generateMethodList(clzName))
+                var clzName = randomShortClassName()
+                if (AppCodeGuardConfig.genClassName.isNotEmpty()) {
+                    clzName = AppCodeGuardConfig.genClassName
+                } else {
+                    // Update to global config
+                    AppCodeGuardConfig.configGenClassName(clzName)
+                }
+                var packageName = randomPackageName()
+                if (AppCodeGuardConfig.genClassPkgName.isNotEmpty()) {
+                    packageName = AppCodeGuardConfig.genClassPkgName
+                } else {
+                    // Update to global config
+                    AppCodeGuardConfig.configGenClassPkgName(packageName)
+                }
+                // Note: Class name 格式需要为: 包名 + 类名
+                val fullClassName = convertToPathFormat("$packageName.$clzName")
+                mClassEntity = SimpleClassEntity(packageName, clzName,
+                    generateMethodList(fullClassName, AppCodeGuardConfig.genClassMethodCount))
             }
         }
     }
@@ -91,12 +106,13 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
     }
 
     /**
-     * 生成随机包名，format: x.y.z
+     * 生成随机包名，format: applicationId + x.y.z
      */
     private fun randomPackageName(): String {
         val packageDepth = (2..4).random() // 随机选择包深度，可以根据需要调整范围
         val alphabet = ('a'..'z').toList()
-        return List(packageDepth) { alphabet.random().toString() }.joinToString(".")
+        val subPkg = List(packageDepth) { alphabet.random().toString() }.joinToString(".")
+        return "${AppCodeGuardConfig.applicationId}.$subPkg"
     }
 
     /**
@@ -144,6 +160,7 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
 
     /**
      * 随机生成指定数量的空方法
+     * Note: [className]需要拼接为全路径限定名 e.g, `androidx/appcompat/app/AppCompatActivity`
      */
     private fun generateMethodList(className: String = "", count: Int = 3): List<MethodEntity> {
         val genMethodList = mutableListOf<MethodEntity>()
@@ -161,5 +178,9 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
             genMethodList.add(methodEntity)
         }
         return genMethodList
+    }
+
+    fun convertToPathFormat(className: String): String {
+        return className.replace('.', '/')
     }
 }

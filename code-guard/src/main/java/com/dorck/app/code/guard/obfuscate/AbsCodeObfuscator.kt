@@ -4,6 +4,7 @@ import java.util.Random
 
 abstract class AbsCodeObfuscator : IAppCodeObfuscator {
     protected val random = Random()
+    protected abstract var mClassEntity: SimpleClassEntity?
 
     /**
      * 通过随机布尔值决定是否需要插入
@@ -11,4 +12,6 @@ abstract class AbsCodeObfuscator : IAppCodeObfuscator {
     override fun shouldInsertElement(): Boolean {
         return /*random.nextBoolean()*/ true
     }
+
+    fun getCurClassEntity(): SimpleClassEntity? = mClassEntity
 }
