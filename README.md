@@ -10,23 +10,27 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 - 支持 AGP 8.0 及其以下版本的功能适配
 - 支持通用ASM插件的基础库下沉，降低后续插件开发成本
 
-### Todo List
-- 实现默认内置的类混淆功能
-- 实现方法内的随机代码混淆
-- 提供更加灵活的配置项（类、方法等混淆的随机性配置）
-- 混淆范围细化到函数级别
-- 多线程并行执行，优化混淆速度
+### 快速使用
+// TODO
+
+### 当前进展
+// TODO：放到 `GitHub >> Projects` 中管理
+- [X] 实现默认内置的类混淆基本功能
+- [X] 实现方法内的随机代码混淆
+- [ ] 提供更加灵活的配置项（类、方法、代码块等混淆配置）
+- [ ] 混淆范围细化到函数级别
+- [ ] 多线程并行执行，优化混淆速度
 
 ### 配置项
 
-| 可配置项             | 说明                                                         | 类型           |
-| -------------------- | ------------------------------------------------------------ | -------------- |
-| `maxMethodCount`     | 类中允许插入方法的数量上限                                   | `int`          |
-| `maxFieldCount`      | 类中允许插入变量的数量上限                                   | `int`          |
-| `isAutoAdapted`      | 是否自动适配插入的方法或变量的数量                           | `boolean`      |
-| `processingPackages` | 需要混淆处理的包路径（若未设置，则默认所有路径）             | `List<String>` |
-| `isSkipJars`         | 是否跳过第三方 jar 的混淆增强（默认为 `true`）               | `boolean`      |
-| `isSkipAbsClass`     | 是否跳过抽象类的混淆增强（默认为 `true`）                    | `boolean`      |
+| 可配置项             | 说明                                       | 类型           |
+| -------------------- |------------------------------------------| -------------- |
+| `maxMethodCount`     | 类中允许插入方法的数量上限                            | `int`          |
+| `maxFieldCount`      | 类中允许插入变量的数量上限                            | `int`          |
+| `isAutoAdapted`      | 是否根据当前类或方法的具体情况自动适配插入的方法或变量的数量           | `boolean`      |
+| `processingPackages` | 需要混淆处理的包路径（若未设置，则默认所有路径）                 | `List<String>` |
+| `isSkipJars`         | 是否跳过第三方 jar 的混淆增强（默认为 `true`）            | `boolean`      |
+| `isSkipAbsClass`     | 是否跳过抽象类的混淆增强（默认为 `true`）                 | `boolean`      |
 | `obfuscationDict`    | 自定义的混淆代码字典文件，可自行配置插入的代码和离散程度（格式参照下方详细介绍） | `String`       |
 
 ### 混淆字典格式说明
@@ -75,7 +79,7 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 - **codeBlock**：针对于方法级别，即在方法中随机插入若干外部指定类的静态方法调用。主要注意以下规则：
   - 这个类可以自己在项目中自由创建，为防止开启proguard代码混淆后被优化，需要在 `proguard-rules.pro` 中 **keep** 住该类；
   - 类中仅可以包含 **`public static void`** 修饰的方法，不能有返回值；
-  - 该类中方法参数只能是无参或者单个参数，且参数类型目前仅支持 `int` 和 `long`；
+  - 该类中方法参数只能是无参或者单个参数，且参数类型仅支持基本数据类型和 `String` 类型；
   - 插件执行方法内代码混淆时的随机性取决于该类中定义方法的随机性（如你可以定义足够多的无意义方法）
 - **whiteList**：白名单配置，可以确保白名单内的类不会被插入混淆代码
 

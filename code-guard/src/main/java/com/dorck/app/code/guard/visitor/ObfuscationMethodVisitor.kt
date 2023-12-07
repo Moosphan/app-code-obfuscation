@@ -7,7 +7,9 @@ import org.objectweb.asm.*;
 
 class ObfuscationMethodVisitor(
     val maxCount: Int,
-    val useDefault: Boolean, // If true, we will use generated `[RANDOM_NAME].java` by plugin to obfuscate.
+    // If true, plugin will auto insert specific count of codes by ins in method.
+    val insertCountAutoAdapted: Boolean,
+    // If is [RandomCodeObfuscator], we will use generated `[RANDOM_NAME].java` by plugin to obfuscate
     private val obfuscator: IAppCodeObfuscator,
     api: Int,
     mv: MethodVisitor
