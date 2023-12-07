@@ -35,17 +35,17 @@ class CodeGuardPlugin : Plugin<Project> {
             }
             // 基于preBuild任务时机来插入源码到指定`src/main/java`下，便于混淆代码参与到compile阶段
             project.android().applicationVariants.forEach { variant ->
-                val preBuildTask = variant.preBuildProvider.get()
+//                val preBuildTask = variant.preBuildProvider.get()
+                val preBuildTask = project.tasks.getByName("preBuild")
                 logMessage("Found preBuild task: ${preBuildTask.name}")
-                val createTaskName = "gen${variant.name.capitalize()}JavaClassTask"
+                val createTaskName = "gen${variant.name.capitalize()}JavaTempClassTask"
                 var existGenTask = project.tasks.findByName(createTaskName)
-                var isPackageExist = false
                 if (existGenTask == null) {
                     existGenTask = project.tasks.create(createTaskName, GenRandomClassTask::class.java)
-                    AppCodeGuardConfig.configJavaCodeGenDir(getGenClassOutputPath(project))
-                    val (outputDir, pkgExist) = createGenClassOutputDir()
+                    AppCodeGuardConfig.configJavaCodeGenMainDir(getGenClassBaseOutputDir(project))
+                    val outputDir = createGenClassOutputMainDir()
+                    // Configure java main output dir.
                     existGenTask.outputDir = outputDir
-                    isPackageExist = pkgExist
                 }
                 preBuildTask.dependsOn(existGenTask)
                 // 编译完成后需要将混淆类从源码目录删除(在compile之后)
@@ -54,7 +54,8 @@ class CodeGuardPlugin : Plugin<Project> {
                 // Note: 需要确保 Transform 处理完后再删除
                 val transformTask = project.tasks.getByName("package${variant.name.capitalize()}")
                 transformTask.doLast {
-                    logMessage("Start delete generated class.")
+                    val isPackageExist = AppCodeGuardConfig.isPkgExist ?: false
+                    logMessage("Start delete generated class, pkg exist: $isPackageExist, genPkgName: ${AppCodeGuardConfig.genClassPkgName}")
                     deleteGenClass(isPackageExist)
                 }
             }
@@ -63,21 +64,17 @@ class CodeGuardPlugin : Plugin<Project> {
         project.android().registerTransform(methodTraceTransform)
     }
 
-    private fun createGenClassOutputDir(): Pair<File, Boolean> {
-        val path = AppCodeGuardConfig.javaCodeGenDir
+    private fun createGenClassOutputMainDir(): File {
+        val path = AppCodeGuardConfig.javaCodeGenMainDir
         val dir = File(path)
-        // 判断包路径是否已经存在，防止后续生成完代码误删
-        var alreadyExist = false
         if (!dir.exists()) {
             dir.mkdirs()
-        } else {
-            alreadyExist = true
         }
-        return Pair(dir, alreadyExist)
+        return dir
     }
 
     private fun deleteGenClass(isPkgExist: Boolean) {
-        // Note: 如果包名之前不存在，需要将创建的包目录也一并删除
+        // Note: 如果包名之前不存在，需要将创建的包目录也一并删除(获取子包名的第一个目录)
         // TODO de
         if (isPkgExist) {
             val classPath = AppCodeGuardConfig.javaCodeGenPath
@@ -85,17 +82,27 @@ class CodeGuardPlugin : Plugin<Project> {
             if (genClassFile.exists()) {
                 genClassFile.delete()
             }
+            KLogger.error("deleteGenClass, path: $classPath")
         } else {
-            val classPgkDir = AppCodeGuardConfig.javaCodeGenDir
-            KLogger.error("deleteGenClass, dir: $classPgkDir")
-            val genClassDir = File(classPgkDir)
+            val deleteDir = getDeleteDir()
+            KLogger.error("deleteGenClass, dir: $deleteDir")
+            val genClassDir = File(deleteDir)
             if (genClassDir.exists()) {
                 IOUtils.deleteDirectory(genClassDir)
             }
         }
     }
 
-    private fun getGenClassOutputPath(project: Project): String =
+    private fun getDeleteDir(): String {
+        val mainDir = AppCodeGuardConfig.javaCodeGenMainDir
+        val applicationId = AppCodeGuardConfig.applicationId
+        val genPkg = AppCodeGuardConfig.genClassPkgName
+        val temp = genPkg.replace(applicationId, "")
+        val baseDir = applicationId + "." + temp.split(".")[1]
+        return mainDir + baseDir.replace(".", "/") + "/"
+    }
+
+    private fun getGenClassBaseOutputDir(project: Project): String =
         project.projectDir.absolutePath + "/src/main/java/"
     //project.the<SourceSetContainer>().getByName("main").allJava.sourceDirectories.singleFile.absolutePath
 

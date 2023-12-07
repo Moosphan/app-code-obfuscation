@@ -9,7 +9,6 @@ import com.dorck.app.code.guard.utils.getPackageName
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
-import org.gradle.kotlin.dsl.get
 import java.io.File
 
 abstract class GenRandomClassTask : DefaultTask() {
@@ -33,6 +32,12 @@ abstract class GenRandomClassTask : DefaultTask() {
         val packageName = classEntity.pkgName
         val genJavaCode = CodeGenerator.generateJavaClass(classEntity)
 
+        val outputParentDir = File(outputDir, packageName.replace('.', '/') + "/")
+        // 判断生成的文件路径是否已存在(此处如果已经赋值过就跳过，防止variant下反复修改的情况)
+        if (AppCodeGuardConfig.isPkgExist == null) {
+            AppCodeGuardConfig.configPackageExistState(outputParentDir.exists())
+        }
+        KLogger.error("generateClass, is gen pkg exist: ${outputParentDir.exists()}")
         val outputFile = File(outputDir, "${packageName.replace('.', '/')}/$className.java")
         outputFile.parentFile.mkdirs()
         outputFile.writeText(genJavaCode)

@@ -17,57 +17,62 @@ class ObfuscationMethodVisitor(
     private var isNeedInsertion = false
 
     private var mCurCall: MethodEntity? = null
+    private var mCurInsertionCount: Int = 0
 
     override fun visitCode() {
-        KLogger.error("visitCode...")
         super.visitCode()
         // 随机判断是否插入混淆方法
         isNeedInsertion = shouldInsertConfusionMethod()
-        if (isNeedInsertion) {
-            val randomMethodCall = obfuscator.nextCodeCall()
-            KLogger.error("visitCode >> randomMethodCall: ${randomMethodCall ?: "null"}")
-            randomMethodCall?.let {
-                this.mCurCall = randomMethodCall
-                val methodName = randomMethodCall.name
-                val methodDesc = randomMethodCall.desc
-                val ownerClz = randomMethodCall.className
-//                pushDefaultConstToStack(methodDesc)
-//                // 插入混淆方法调用
+        if (isNeedInsertion && mCurInsertionCount < maxCount) {
+            val insertCount = getRandomInsertCount()
+            repeat(insertCount) {
+                insertCodeCall()
+            }
+            mCurInsertionCount += insertCount
+        }
+    }
+
+    private fun insertCodeCall() {
+        val randomMethodCall = obfuscator.nextCodeCall()
+        KLogger.error("visitCode >> randomMethodCall: ${randomMethodCall ?: "null"}")
+        randomMethodCall?.let {
+            this.mCurCall = randomMethodCall
+            val methodName = randomMethodCall.name
+            val methodDesc = randomMethodCall.desc
+            val ownerClz = randomMethodCall.className
+            pushDefaultConstToStack(methodDesc)
+            // 插入混淆方法调用
+            mv.visitMethodInsn(
+                Opcodes.INVOKESTATIC,
+                ownerClz,
+                methodName,
+                methodDesc,
+                false
+            )
+            // sample method call
+//                mv.visitInsn(Opcodes.ICONST_0)
 //                mv.visitMethodInsn(
 //                    Opcodes.INVOKESTATIC,
-//                    ownerClz,
-//                    methodName,
-//                    methodDesc,
+//                    "com/dorck/app/obfuscate/a/b/e/TestCall",
+//                    "make",
+//                    "(I)V",
 //                    false
 //                )
-                // sample
-                mv.visitInsn(Opcodes.ICONST_0)
-                mv.visitMethodInsn(
-                    Opcodes.INVOKESTATIC,
-                    "com/dorck/app/obfuscate/a/b/e/TestCall",
-                    "make",
-                    "(I)V",
-                    false
-                )
-            }
         }
     }
 
     override fun visitInsn(opcode: Int) {
-        // 在方法体末尾插入 RETURN 指令，表示方法结束
+        // 如果方法访问结束时数量不够，则继续插入
         if (isNeedInsertion && mCurCall != null) {
-            if (opcode == Opcodes.RETURN) {
-                super.visitVarInsn(Opcodes.RETURN, 0)
+            if (opcode == Opcodes.RETURN || opcode == Opcodes.ATHROW) {
+                if (mCurInsertionCount < maxCount) {
+                    repeat(maxCount - mCurInsertionCount) {
+                        insertCodeCall()
+                    }
+                }
             }
         }
         super.visitInsn(opcode)
-    }
-
-    override fun visitEnd() {
-        // 在方法结束时插入一些清理代码
-
-        // 调用父类的 visitEnd 方法，确保方法正确结束
-        super.visitEnd()
     }
 
     private fun shouldInsertConfusionMethod(): Boolean {
@@ -88,6 +93,9 @@ class ObfuscationMethodVisitor(
             "D" -> mv.visitLdcInsn(0.0) // Default value for double
             "Z" -> mv.visitLdcInsn(false) // Default value for boolean
             "C" -> mv.visitLdcInsn('\u0000') // Default value for char
+            "B" -> mv.visitLdcInsn(0.toByte()) // Default value for byte
+            "S" -> mv.visitLdcInsn(0.toShort()) // Default value for short
+            "J" -> mv.visitLdcInsn(0L) // Default value for long
             "Ljava/lang/String;" -> mv.visitLdcInsn("DefaultString") // Default value for String
             "" -> { // No params
                 // do nothing
@@ -95,4 +103,9 @@ class ObfuscationMethodVisitor(
             else -> throw IllegalArgumentException("Unsupported parameter type: $descriptor")
         }
     }
+
+    private fun getRandomInsertCount(): Int {
+        return (Math.random() * 5 + 2).toInt()
+    }
+
 }

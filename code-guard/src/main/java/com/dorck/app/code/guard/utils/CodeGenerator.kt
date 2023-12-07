@@ -17,9 +17,6 @@ object CodeGenerator {
         // 添加包名
         codeBuilder.append("package ${classEntity.pkgName};\n\n")
 
-        // 添加导入语句
-        codeBuilder.append("import java.util.*;\n\n")
-
         // 添加类定义
         codeBuilder.append("public class ${classEntity.className} {\n")
 

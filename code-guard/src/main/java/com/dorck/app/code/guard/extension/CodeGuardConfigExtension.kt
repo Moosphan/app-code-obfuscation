@@ -25,7 +25,7 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     // Whether to enable method obfuscation.
     var methodObfuscateEnable: Boolean = true
     // The maximum number of lines of code allowed to be inserted within a method.
-    var maxCodeLineCount: Int = Int.MAX_VALUE
+    var maxCodeLineCount: Int = 6
     // Whether to enable automatic adaptation.
     // If enable, plugin will automatically generate a acceptable number of methods and fields
     // based on the specific circumstances of the current class.

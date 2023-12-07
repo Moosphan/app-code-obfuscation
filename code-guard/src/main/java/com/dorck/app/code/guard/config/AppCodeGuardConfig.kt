@@ -25,7 +25,7 @@ object AppCodeGuardConfig {
 
     private var mMap: ConcurrentHashMap<String, Any> = ConcurrentHashMap()
     val javaCodeGenPath: String by mMap
-    val javaCodeGenDir: String by mMap
+    val javaCodeGenMainDir: String by mMap              // src/main/java目录
     val applicationId: String by mMap
     // Class generation config(生成供目标混淆函数内生成代码调用的类).
     val genClassName: String by mMap
@@ -35,6 +35,8 @@ object AppCodeGuardConfig {
     val isUseDefaultStrategy: Boolean by mMap           // 是否使用插件默认的随机策略
     val isEnableCodeObfuscateInMethod: Boolean by mMap  // 是否启用在方法内插入混淆代码(注意监测对包体积和编译时常的影响)
     val excludeRulesList: HashSet<String> by mMap
+
+    var isPkgExist: Boolean? = null                    // 生成类之前是否已存在该包名路径(用于防止误删项目源码)
 
     fun configureFromExtension(extension: CodeGuardConfigExtension) {
         mMap["genClassName"] = extension.generatedClassName
@@ -46,8 +48,8 @@ object AppCodeGuardConfig {
         readConfigs()
     }
 
-    fun configJavaCodeGenDir(dir: String) {
-        mMap["javaCodeGenDir"] = dir
+    fun configJavaCodeGenMainDir(dir: String) {
+        mMap["javaCodeGenMainDir"] = dir
     }
 
     fun configJavaCodeGenPath(path: String) {
@@ -68,6 +70,10 @@ object AppCodeGuardConfig {
 
     fun configGenClassMethodCount(methodCount: Int) {
         mMap["genClassMethodCount"] = methodCount
+    }
+
+    fun configPackageExistState(isExist: Boolean) {
+        isPkgExist = isExist
     }
 
     fun getExcludeRules(): HashSet<String> {

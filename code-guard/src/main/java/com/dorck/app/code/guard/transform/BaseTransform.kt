@@ -120,6 +120,10 @@ abstract class BaseTransform : Transform() {
      * 基于ASM执行具体的代码插桩操作
      */
     private fun transformClassFile(src: File, dest: File) {
+        if (src.isDirectory) {
+            KLogger.error("transformClassFile, src file is directory!")
+            return
+        }
         val inputStream = FileInputStream(src)
         val outputStream = FileOutputStream(dest)
         try {

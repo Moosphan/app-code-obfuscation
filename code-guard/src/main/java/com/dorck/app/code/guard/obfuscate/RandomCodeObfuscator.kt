@@ -25,26 +25,24 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
 
     override fun initialize() {
         if (AppCodeGuardConfig.isEnableCodeObfuscateInMethod) {
-            if (mClassEntity == null) {
-                var clzName = randomShortClassName()
-                if (AppCodeGuardConfig.genClassName.isNotEmpty()) {
-                    clzName = AppCodeGuardConfig.genClassName
-                } else {
-                    // Update to global config
-                    AppCodeGuardConfig.configGenClassName(clzName)
-                }
-                var packageName = randomPackageName()
-                if (AppCodeGuardConfig.genClassPkgName.isNotEmpty()) {
-                    packageName = AppCodeGuardConfig.genClassPkgName
-                } else {
-                    // Update to global config
-                    AppCodeGuardConfig.configGenClassPkgName(packageName)
-                }
-                // Note: Class name 格式需要为: 包名 + 类名
-                val fullClassName = convertToPathFormat("$packageName.$clzName")
-                mClassEntity = SimpleClassEntity(packageName, clzName,
-                    generateMethodList(fullClassName, AppCodeGuardConfig.genClassMethodCount))
+            var clzName = randomShortClassName()
+            if (AppCodeGuardConfig.genClassName.isNotEmpty()) {
+                clzName = AppCodeGuardConfig.genClassName
+            } else {
+                // Update to global config
+                AppCodeGuardConfig.configGenClassName(clzName)
             }
+            var packageName = randomPackageName()
+            if (AppCodeGuardConfig.genClassPkgName.isNotEmpty()) {
+                packageName = AppCodeGuardConfig.genClassPkgName
+            } else {
+                // Update to global config
+                AppCodeGuardConfig.configGenClassPkgName(packageName)
+            }
+            // Note: Class name 格式需要为: 包名 + 类名
+            val fullClassName = convertToPathFormat("$packageName.$clzName")
+            mClassEntity = SimpleClassEntity(packageName, clzName,
+                generateMethodList(fullClassName, AppCodeGuardConfig.genClassMethodCount))
         }
     }
 
