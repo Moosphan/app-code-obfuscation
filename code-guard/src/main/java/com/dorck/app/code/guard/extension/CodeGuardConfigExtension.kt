@@ -29,7 +29,7 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     // Whether to enable automatic adaptation.
     // If enable, plugin will automatically generate a acceptable number of methods and fields
     // based on the specific circumstances of the current class.
-    var isAutoAdapted: Boolean = true
+    var isInsertCountAutoAdapted: Boolean = true
     // Generated java class package name for code call.
     var generatedClassPkg: String = ""
     // Generated java class name for code call.
@@ -38,6 +38,9 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     var generatedMethodCount: Int = 3
     // Exclude rules which you don't want to obfuscate.
     var excludeRules: HashSet<String> = HashSet()
+    // Specify a collection of variants for obfuscated execution.
+    // E.g, `release`, if empty, it will execute obfuscation in all variants.
+    var variantConstraints: HashSet<String> = HashSet()
 
     override fun toString(): String {
         return """
@@ -48,7 +51,7 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
                 supportIncremental: $supportIncremental,
                 processingPackages: $processingPackages,
                 isSkipAbsClass: $isSkipAbsClass,
-                isAutoAdapted: $isAutoAdapted,
+                isAutoAdapted: $isInsertCountAutoAdapted,
                 maxFieldCount: $maxFieldCount,
                 maxMethodCount: $maxMethodCount,
                 methodObfuscateEnable: $methodObfuscateEnable,
@@ -56,7 +59,8 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
                 generatedClassPkg: $generatedClassPkg,
                 generatedClassName: $generatedClassName,
                 generatedMethodCount: $generatedMethodCount,
-                excludeRules: $excludeRules
+                excludeRules: $excludeRules,
+                variantConstraints: $variantConstraints,
             }
         """.trimIndent()
     }

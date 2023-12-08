@@ -1,3 +1,5 @@
+import kotlin.collections.*
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -33,8 +35,14 @@ android {
 
 }
 
+codeGuard {
+    enable = true
+    variantConstraints = hashSetOf("release")
+}
+
 dependencies {
     implementation("androidx.core:core-ktx:1.7.0")
+    implementation(kotlin("stdlib-jdk8"))
     implementation("androidx.appcompat:appcompat:1.3.0")
     implementation( "com.google.android.material:material:1.4.0")
     implementation("androidx.constraintlayout:constraintlayout:2.0.4")

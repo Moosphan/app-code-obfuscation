@@ -31,6 +31,7 @@ data class MethodEntity(
     val access: Int = Opcodes.ACC_PRIVATE, // 默认插入private方法
     val className: String = "",
     val isStatic: Boolean = false,
+    val fromInsert: Boolean = true
 ) {
     override fun toString(): String {
         return Gson().toJson(this)

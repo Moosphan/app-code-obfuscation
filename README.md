@@ -7,6 +7,7 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 - 支持插入类的成员变量、静态变量、方法及方法体内的代码段等
 - 支持自定义随机代码字典，增强定制性
 - 支持插入作用域控制（类级别、包级别和所有类）
+- 支持变体范围约束（e.g, 只针对 `release` 包执行混淆）
 - 支持 AGP 8.0 及其以下版本的功能适配
 - 支持通用ASM插件的基础库下沉，降低后续插件开发成本
 
@@ -19,6 +20,7 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 - [X] 实现方法内的随机代码混淆
 - [ ] 提供更加灵活的配置项（类、方法、代码块等混淆配置）
 - [ ] 混淆范围细化到函数级别
+- [ ] 将执行范围约束到某种变体（如 release）
 - [ ] 多线程并行执行，优化混淆速度
 
 ### 配置项

@@ -7,11 +7,12 @@ import com.dorck.app.code.guard.obfuscate.FieldEntity
 import com.dorck.app.code.guard.obfuscate.IAppCodeObfuscator
 import com.dorck.app.code.guard.obfuscate.MethodEntity
 import com.dorck.app.code.guard.utils.KLogger
-import org.gradle.kotlin.dsl.provideDelegate
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.FieldVisitor
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
+import java.lang.Integer.min
+import kotlin.math.max
 
 class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, api: Int, visitor: ClassVisitor): ClassVisitor(api, visitor) {
     private var isAbsClz = false
@@ -19,8 +20,8 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
     private val mClassFields: MutableList<FieldEntity> = mutableListOf()
     private val mClassMethods: MutableList<MethodEntity> = mutableListOf()
     private var mCurInsertedField: FieldEntity? = null
-    private val mMaxFieldsSize: Int by lazy { extension.maxFieldCount }
-    private val mMaxMethodsSize: Int by lazy { extension.maxMethodCount }
+    private var mMaxFieldsSize: Int = UNINITIALIZED_VALUE
+    private var mMaxMethodsSize: Int = UNINITIALIZED_VALUE
 
     @Volatile
     private var mFieldInsertionCount: Int = 0
@@ -35,22 +36,25 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
         signature: String?,
         value: Any?
     ): FieldVisitor? {
+        if (mMaxFieldsSize == UNINITIALIZED_VALUE) {
+            mMaxFieldsSize = extension.maxFieldCount
+        }
         KLogger.error("visitField, mMaxFieldsSize: $mMaxFieldsSize")
         val obfuscator = CodeObfuscatorFactory.getCodeObfuscator(extension)
         // Insert at random index(始终保证插入变量数目少于配置的数量上限).
         if (obfuscator.shouldInsertElement() && mFieldInsertionCount <= mMaxFieldsSize) {
-            updateCurFieldList(access, name, descriptor)
+            updateOriginFields(access, name, descriptor)
             // 保证历史属性能被正常保留
             super.visitField(access, name, descriptor, signature, value)
             return insertRandomField(obfuscator)
         }
         // 保证原有变量可以正常访问
-        updateCurFieldList(access, name, descriptor)
+        updateOriginFields(access, name, descriptor)
         return super.visitField(access, name, descriptor, signature, value)
     }
 
     override fun visitEnd() {
-        KLogger.error("visitEnd, current insertion count: $mFieldInsertionCount")
+        KLogger.error("visitEnd, current insert field count: $mFieldInsertionCount, method count: $mMethodInsertionCount")
         // 如果插入数量不足需要补齐
         val obfuscator = CodeObfuscatorFactory.getCodeObfuscator(extension)
         if (mFieldInsertionCount <= mMaxFieldsSize) {
@@ -64,6 +68,7 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
             }
         }
         super.visitEnd()
+        KLogger.error("visitEnd finished, field inserted count: $mFieldInsertionCount, method count: $mMethodInsertionCount")
     }
 
     override fun visit(
@@ -79,6 +84,7 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
         if ((access and Opcodes.ACC_ABSTRACT) > 0 || (access and Opcodes.ACC_INTERFACE) > 0) {
             isAbsClz = true
         }
+        KLogger.error("visit class [$className], isInsertCountAutoAdapt: ${extension.isInsertCountAutoAdapted}")
     }
 
     override fun visitMethod(
@@ -90,22 +96,27 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
     ): MethodVisitor? {
         // 如果设置跳过抽象类或者构造函数，则直接返回
         if ((isAbsClz && extension.isSkipAbsClass) || isConstructor(name!!, descriptor!!)) {
+            updateOriginMethods(access, name!!, descriptor!!)
             return super.visitMethod(access, name, descriptor, signature, exceptions)
         }
         val curMethodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions)
-        mClassMethods.add(MethodEntity(name, descriptor, access))
+        if (mMaxMethodsSize == UNINITIALIZED_VALUE) {
+            mMaxMethodsSize = extension.maxMethodCount
+        }
+        // 统计原有方法的数量
+        updateOriginMethods(access, name, descriptor)
         // Start insert empty methods in cur class.
         val obfuscator = CodeObfuscatorFactory.getCodeObfuscator(extension)
         if (obfuscator.shouldInsertElement() && mMethodInsertionCount <= mMaxMethodsSize) {
-            // 保证原有函数可用
+            // 保证原有函数可用，这里只做插入操作，不应返回组装函数
             insertRandomMethod(obfuscator)
         }
         // 注意插入的方法不需要执行函数内的代码插入
-        return ObfuscationMethodVisitor(extension.maxCodeLineCount, extension.isAutoAdapted, obfuscator, api, curMethodVisitor)
+        return ObfuscationMethodVisitor(extension.maxCodeLineCount, extension.isInsertCountAutoAdapted, obfuscator, api, curMethodVisitor)
     }
 
     private fun insertRandomField(obfuscator: IAppCodeObfuscator): FieldVisitor? {
-        KLogger.error("insertRandomField >> start insert field, progress: [${mFieldInsertionCount+1}/$mMaxFieldsSize]")
+        KLogger.info("insertRandomField >> start insert field, progress: [${mFieldInsertionCount+1}/$mMaxFieldsSize]")
         val randomField = obfuscator.nextFiled()
         // Ignore existing fields with the same name.
         if (!isFieldExist(randomField.name, randomField.type)) {
@@ -150,22 +161,21 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
         return null
     }
 
-    private fun updateCurFieldList(access: Int, name: String, descriptor: String) {
+    private fun updateOriginFields(access: Int, name: String, descriptor: String) {
         mClassFields.add(FieldEntity(name, access, descriptor, false))
+        // The number of insertions only changes based on the number of original fields.
         updateFieldsLimitCount()
     }
 
     private fun updateFieldsLimitCount() {
         // Real-time update of `maxFieldsSize` is only required in adaptive mode
-        if (!extension.isAutoAdapted) {
+        if (!extension.isInsertCountAutoAdapted) {
             return
         }
+        // Select one-half of the total number of original attributes of the current class as the final insertion quantity.
         val originFields = mClassFields.filter { !it.isInserted }
-        var newCount = (originFields.size * DEFAULT_ADAPTIVE_COUNT_RATIO).toInt()
-        if (newCount < AppCodeGuardConfig.MIN_FIELD_COUNT) {
-            newCount = AppCodeGuardConfig.MAX_FIELD_COUNT
-        }
-//        mMaxFieldsSize = newCount
+        val dynamicInsertCount = (originFields.size * DEFAULT_ADAPTIVE_COUNT_RATIO).toInt()
+        mMaxFieldsSize = max(min(dynamicInsertCount, extension.maxFieldCount), AppCodeGuardConfig.MIN_FIELD_COUNT)
     }
 
     private fun isFieldExist(name: String, descriptor: String): Boolean {
@@ -178,6 +188,22 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
             }
         }
         return false
+    }
+
+    private fun updateOriginMethods(access: Int, name: String, descriptor: String) {
+        mClassMethods.add(MethodEntity(name, descriptor, access))
+        updateMethodsLimitCount()
+    }
+
+    private fun updateMethodsLimitCount() {
+        // Real-time update of `maxMethodsSize` is only required in adaptive mode
+        if (!extension.isInsertCountAutoAdapted) {
+            return
+        }
+        // Select one-half of the total number of original attributes of the current class as the final insertion quantity.
+        val originMethods = mClassMethods.filter { !it.fromInsert }
+        val dynamicInsertCount = (originMethods.size * DEFAULT_ADAPTIVE_COUNT_RATIO).toInt()
+        mMaxMethodsSize = max(min(dynamicInsertCount, extension.maxMethodCount), AppCodeGuardConfig.MIN_METHOD_COUNT)
     }
 
     private fun isMethodExist(name: String, descriptor: String): Boolean {
@@ -200,5 +226,6 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
     companion object {
         // Ratio of inserted variables or methods to existing variables or methods in the current class.
         private const val DEFAULT_ADAPTIVE_COUNT_RATIO = 0.5
+        private const val UNINITIALIZED_VALUE = -1
     }
 }

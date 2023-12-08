@@ -6,7 +6,7 @@ import com.dorck.app.code.guard.utils.KLogger
 import org.objectweb.asm.*;
 
 class ObfuscationMethodVisitor(
-    val maxCount: Int,
+    private val maxCount: Int,
     // If true, plugin will auto insert specific count of codes by ins in method.
     val insertCountAutoAdapted: Boolean,
     // If is [RandomCodeObfuscator], we will use generated `[RANDOM_NAME].java` by plugin to obfuscate
@@ -88,16 +88,15 @@ class ObfuscationMethodVisitor(
      */
     private fun pushDefaultConstToStack(descriptor: String) {
         val paramDesc = descriptor.substringAfter('(').substringBefore(')')
-        KLogger.info("pushDefaultConstToStack, param type: $paramDesc")
         when (paramDesc) {
-            "I" -> mv.visitLdcInsn(0) // Default value for int
-            "F" -> mv.visitLdcInsn(0.0f) // Default value for float
-            "D" -> mv.visitLdcInsn(0.0) // Default value for double
-            "Z" -> mv.visitLdcInsn(false) // Default value for boolean
-            "C" -> mv.visitLdcInsn('\u0000') // Default value for char
-            "B" -> mv.visitLdcInsn(0.toByte()) // Default value for byte
-            "S" -> mv.visitLdcInsn(0.toShort()) // Default value for short
-            "J" -> mv.visitLdcInsn(0L) // Default value for long
+            "I" -> mv.visitLdcInsn(0)          // Default value for int
+            "F" -> mv.visitLdcInsn(0.0f)       // Default value for float
+            "D" -> mv.visitLdcInsn(0.0)        // Default value for double
+            "Z" -> mv.visitLdcInsn(false)      // Default value for boolean
+            "C" -> mv.visitLdcInsn('\u0000')   // Default value for char
+            "B" -> mv.visitLdcInsn(0.toByte())       // Default value for byte
+            "S" -> mv.visitLdcInsn(0.toShort())      // Default value for short
+            "J" -> mv.visitLdcInsn(0L)         // Default value for long
             "Ljava/lang/String;" -> mv.visitLdcInsn("DefaultString") // Default value for String
             "" -> { // No params
                 // do nothing

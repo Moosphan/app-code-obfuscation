@@ -15,7 +15,7 @@ class CodeGuardTransform(
     private val project: Project
 ) : BaseTransform() {
 
-    override fun getName(): String = TAG
+    override fun getName(): String = TRANSFORM_NAME
 
     override fun isIncremental(): Boolean = extension.supportIncremental
 
@@ -26,8 +26,12 @@ class CodeGuardTransform(
     }
 
     override fun realTransform(transformInvocation: TransformInvocation) {
-        if (!extension.enable) {
-            return
+        // Check if ASM processing is required.
+        val isAsmEnable = extension.enable && variantMatches()
+        if (!isAsmEnable) {
+            KLogger.error("realTransform, plugin function not enable.")
+            // 不应该直接返回，需要将代码复制到输出目录，否则无法生成dex
+            // return
         }
         val trsStartTime = System.currentTimeMillis()
         val isIncremental = transformInvocation.isIncremental
@@ -40,11 +44,19 @@ class CodeGuardTransform(
             it.jarInputs.forEach { jarInput ->
                 // collectAndHandleJars(jarInput, transformInvocation.outputProvider, isIncremental)
                 // Jars无需处理，直接拷贝过去
-                val dest = transformInvocation.outputProvider.getContentLocation(jarInput.name, jarInput.contentTypes, jarInput.scopes, Format.JAR)
-                IOUtils.copyFile(jarInput.file, dest)
+                val dest = transformInvocation.outputProvider.getContentLocation(jarInput.name,
+                    jarInput.contentTypes, jarInput.scopes, Format.JAR)
+                jarInput.file.copyRecursively(dest, true)
             }
             it.directoryInputs.forEach { dirInput ->
-                collectAndHandleDirectories(dirInput, transformInvocation.outputProvider, isIncremental)
+                if (isAsmEnable) {
+                    collectAndHandleDirectories(dirInput, transformInvocation.outputProvider, isIncremental)
+                } else {
+                    val destDir = transformInvocation.outputProvider.getContentLocation(dirInput.name,
+                        dirInput.contentTypes, dirInput.scopes, Format.DIRECTORY)
+                    dirInput.file.copyRecursively(destDir, true)
+                }
+
             }
         }
 
@@ -59,7 +71,19 @@ class CodeGuardTransform(
         return super.isNeedProcessClass(clzPath) && !AppCodeGuardConfig.checkExcludes(clzPath)
     }
 
+    /**
+     * If `variantConstraints` empty or matches in available variants, returns true.
+     */
+    private fun variantMatches(): Boolean {
+        KLogger.error("variantMatches, rules: ${extension.variantConstraints}, curVariant: ${AppCodeGuardConfig.currentBuildVariant}")
+        val variantRules = extension.variantConstraints
+        if (variantRules.isEmpty() || variantRules.contains(AppCodeGuardConfig.currentBuildVariant)) {
+            return true
+        }
+        return false
+    }
+
     companion object {
-        private const val TAG = "CodeGuardTransform"
+        const val TRANSFORM_NAME = "CodeGuardTransform"
     }
 }
