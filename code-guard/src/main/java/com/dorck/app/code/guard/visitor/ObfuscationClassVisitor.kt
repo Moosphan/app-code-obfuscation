@@ -6,7 +6,7 @@ import com.dorck.app.code.guard.obfuscate.CodeObfuscatorFactory
 import com.dorck.app.code.guard.obfuscate.FieldEntity
 import com.dorck.app.code.guard.obfuscate.IAppCodeObfuscator
 import com.dorck.app.code.guard.obfuscate.MethodEntity
-import com.dorck.app.code.guard.utils.KLogger
+import com.dorck.app.code.guard.utils.DLogger
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.FieldVisitor
 import org.objectweb.asm.MethodVisitor
@@ -39,7 +39,7 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
         if (mMaxFieldsSize == UNINITIALIZED_VALUE) {
             mMaxFieldsSize = extension.maxFieldCount
         }
-        KLogger.error("visitField, mMaxFieldsSize: $mMaxFieldsSize")
+        DLogger.error("visitField, mMaxFieldsSize: $mMaxFieldsSize")
         val obfuscator = CodeObfuscatorFactory.getCodeObfuscator(extension)
         // Insert at random index(始终保证插入变量数目少于配置的数量上限).
         if (obfuscator.shouldInsertElement() && mFieldInsertionCount <= mMaxFieldsSize) {
@@ -54,7 +54,8 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
     }
 
     override fun visitEnd() {
-        KLogger.error("visitEnd, current insert field count: $mFieldInsertionCount, method count: $mMethodInsertionCount")
+        initializeMaxCount()
+        DLogger.error("visitEnd, current insert field count: [$mFieldInsertionCount/$mMaxFieldsSize], method count: [$mMethodInsertionCount/$mMaxMethodsSize]")
         // 如果插入数量不足需要补齐
         val obfuscator = CodeObfuscatorFactory.getCodeObfuscator(extension)
         if (mFieldInsertionCount <= mMaxFieldsSize) {
@@ -68,7 +69,7 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
             }
         }
         super.visitEnd()
-        KLogger.error("visitEnd finished, field inserted count: $mFieldInsertionCount, method count: $mMethodInsertionCount")
+        DLogger.error("visitEnd finished, field inserted count: $mFieldInsertionCount, method count: $mMethodInsertionCount")
     }
 
     override fun visit(
@@ -84,7 +85,7 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
         if ((access and Opcodes.ACC_ABSTRACT) > 0 || (access and Opcodes.ACC_INTERFACE) > 0) {
             isAbsClz = true
         }
-        KLogger.error("visit class [$className], isInsertCountAutoAdapt: ${extension.isInsertCountAutoAdapted}")
+        DLogger.error("visit class [$className], isInsertCountAutoAdapt: ${extension.isInsertCountAutoAdapted}")
     }
 
     override fun visitMethod(
@@ -116,11 +117,11 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
     }
 
     private fun insertRandomField(obfuscator: IAppCodeObfuscator): FieldVisitor? {
-        KLogger.info("insertRandomField >> start insert field, progress: [${mFieldInsertionCount+1}/$mMaxFieldsSize]")
+        DLogger.info("insertRandomField >> start insert field, progress: [${mFieldInsertionCount+1}/$mMaxFieldsSize]")
         val randomField = obfuscator.nextFiled()
         // Ignore existing fields with the same name.
         if (!isFieldExist(randomField.name, randomField.type)) {
-            KLogger.error("Start to insert random field: $randomField")
+            DLogger.error("Start to insert random field: $randomField")
             // Start insert field.
             mCurInsertedField = randomField
             mFieldInsertionCount++
@@ -136,12 +137,15 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
         return null
     }
 
+    /**
+     * TODO: fix method counting error
+     */
     private fun insertRandomMethod(obfuscator: IAppCodeObfuscator): MethodVisitor? {
-        KLogger.info("visitMethod >> start insert method, progress: [${mMethodInsertionCount+1}/$mMaxMethodsSize]")
+        DLogger.info("visitMethod >> start insert method, progress: [${mMethodInsertionCount+1}/$mMaxMethodsSize]")
         val randomMethod = obfuscator.nextMethod()
         // 检查是否存在同名的方法，避免重复插入
         if (!isMethodExist(randomMethod.name, randomMethod.desc)) {
-            KLogger.info("Start to insert random method: $randomMethod")
+            DLogger.info("Start to insert random method: $randomMethod")
             mMethodInsertionCount++
             mClassMethods.add(randomMethod)
             // Insert random method.
@@ -216,6 +220,16 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
             }
         }
         return false
+    }
+
+    private fun initializeMaxCount() {
+        // 考虑当前类不存在任何属性或者方法的情况，需要初始化
+        if (mMaxFieldsSize == UNINITIALIZED_VALUE) {
+            mMaxFieldsSize = extension.maxFieldCount
+        }
+        if (mMaxMethodsSize == UNINITIALIZED_VALUE) {
+            mMaxMethodsSize = extension.maxMethodCount
+        }
     }
 
     private fun isConstructor(methodName: String, methodDescriptor: String): Boolean {

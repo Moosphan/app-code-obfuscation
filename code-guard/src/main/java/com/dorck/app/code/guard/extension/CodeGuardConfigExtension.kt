@@ -15,7 +15,7 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     var obfuscationDict: String = ""
         get() = field?.replace("\\", "/") // Note: Fix path bugs on windows.
     // Configure the package paths for which you want to enhance obfuscation.
-    var processingPackages: List<String> = emptyList()
+    var processingPackages: HashSet<String> = HashSet()
     // Whether to skip obfuscate abstract classes.
     var isSkipAbsClass: Boolean = true
     // Maximum number of methods in a class.
@@ -37,7 +37,7 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     // Number of random methods generated in java class.
     var generatedMethodCount: Int = 3
     // Exclude rules which you don't want to obfuscate.
-    var excludeRules: HashSet<String> = HashSet()
+    var excludeRules: HashSet<String> = HashSet() // TODO 12/09 包含白名单职责
     // Specify a collection of variants for obfuscated execution.
     // E.g, `release`, if empty, it will execute obfuscation in all variants.
     var variantConstraints: HashSet<String> = HashSet()

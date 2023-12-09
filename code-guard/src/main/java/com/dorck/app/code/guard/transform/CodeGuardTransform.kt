@@ -4,8 +4,7 @@ import com.android.build.api.transform.Format
 import com.android.build.api.transform.TransformInvocation
 import com.dorck.app.code.guard.config.AppCodeGuardConfig
 import com.dorck.app.code.guard.extension.CodeGuardConfigExtension
-import com.dorck.app.code.guard.utils.IOUtils
-import com.dorck.app.code.guard.utils.KLogger
+import com.dorck.app.code.guard.utils.DLogger
 import com.dorck.app.code.guard.visitor.ObfuscationClassVisitor
 import org.gradle.api.Project
 import org.objectweb.asm.ClassVisitor
@@ -20,8 +19,8 @@ class CodeGuardTransform(
     override fun isIncremental(): Boolean = extension.supportIncremental
 
     override fun onTransformBefore(transformInvocation: TransformInvocation) {
-        KLogger.debug = extension.logDebug
-        KLogger.info("onTransformBefore, extension: $extension")
+        DLogger.debug = extension.logDebug
+        DLogger.info("onTransformBefore, extension: $extension")
         AppCodeGuardConfig.readConfigs()
     }
 
@@ -29,7 +28,7 @@ class CodeGuardTransform(
         // Check if ASM processing is required.
         val isAsmEnable = extension.enable && variantMatches()
         if (!isAsmEnable) {
-            KLogger.error("realTransform, plugin function not enable.")
+            DLogger.error("realTransform, plugin function not enable.")
             // 不应该直接返回，需要将代码复制到输出目录，否则无法生成dex
             // return
         }
@@ -40,7 +39,7 @@ class CodeGuardTransform(
         }
 
         transformInvocation.inputs.forEach {
-            KLogger.info("Transform jar input size: ${it.jarInputs.size}, dir input size: ${it.directoryInputs.size}")
+            DLogger.info("Transform jar input size: ${it.jarInputs.size}, dir input size: ${it.directoryInputs.size}")
             it.jarInputs.forEach { jarInput ->
                 // collectAndHandleJars(jarInput, transformInvocation.outputProvider, isIncremental)
                 // Jars无需处理，直接拷贝过去
@@ -60,7 +59,7 @@ class CodeGuardTransform(
             }
         }
 
-        KLogger.info("The transform time cost: ${System.currentTimeMillis() - trsStartTime}ms")
+        DLogger.info("The transform time cost: ${System.currentTimeMillis() - trsStartTime}ms")
     }
 
     override fun createClassVisitor(api: Int, delegateClassVisitor: ClassVisitor): ClassVisitor {
@@ -75,7 +74,7 @@ class CodeGuardTransform(
      * If `variantConstraints` empty or matches in available variants, returns true.
      */
     private fun variantMatches(): Boolean {
-        KLogger.error("variantMatches, rules: ${extension.variantConstraints}, curVariant: ${AppCodeGuardConfig.currentBuildVariant}")
+        DLogger.error("variantMatches, rules: ${extension.variantConstraints}, curVariant: ${AppCodeGuardConfig.currentBuildVariant}")
         val variantRules = extension.variantConstraints
         if (variantRules.isEmpty() || variantRules.contains(AppCodeGuardConfig.currentBuildVariant)) {
             return true

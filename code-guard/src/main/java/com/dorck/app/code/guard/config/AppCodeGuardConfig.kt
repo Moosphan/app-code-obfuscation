@@ -3,7 +3,7 @@ package com.dorck.app.code.guard.config
 import com.dorck.app.code.guard.extension.CodeGuardConfigExtension
 import com.dorck.app.code.guard.obfuscate.CodeObfuscatorFactory
 import com.dorck.app.code.guard.obfuscate.RandomCodeObfuscator
-import com.dorck.app.code.guard.utils.KLogger
+import com.dorck.app.code.guard.utils.DLogger
 import org.gradle.kotlin.dsl.provideDelegate
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -30,6 +30,7 @@ object AppCodeGuardConfig {
 
     val isUseDefaultStrategy: Boolean by mMap           // 是否使用插件默认的随机策略
     val isEnableCodeObfuscateInMethod: Boolean by mMap  // 是否启用在方法内插入混淆代码(注意监测对包体积和编译时常的影响)
+    val processingPackages: HashSet<String> by mMap        // 需要插件进行混淆处理的包路径(若未配置则默认处理所有类)
     val excludeRulesList: HashSet<String> by mMap       // 排除混淆的规则集合
     val availableVariants: HashSet<String> by mMap      // 收集当前project下配置的所有变体(默认`android -> buildTypes`下所有变体都会执行)
     val currentBuildVariant: String by mMap             // 当前用户执行的 variant (如: 执行 `assembleDebug`)
@@ -47,7 +48,10 @@ object AppCodeGuardConfig {
         mMap["genClassMethodCount"] = extension.generatedMethodCount
         mMap["isUseDefaultStrategy"] = !CodeObfuscatorFactory.checkFileIfExist(extension.obfuscationDict)
         mMap["isEnableCodeObfuscateInMethod"] = extension.methodObfuscateEnable
-        mMap["excludeRulesList"] = extension.excludeRules
+        mMap["processingPackages"] = extension.processingPackages
+        mMap["excludeRulesList"] = extension.excludeRules.also {
+            it.addAll(DEFAULT_EXCLUDE_RULES)
+        }
         readConfigs()
     }
 
@@ -87,30 +91,53 @@ object AppCodeGuardConfig {
         mMap["currentBuildVariant"] = variant
     }
 
-    fun getExcludeRules(): HashSet<String> {
-        excludeRulesList.addAll(DEFAULT_EXCLUDE_RULES)
+    private fun getExcludeRules(): HashSet<String> {
         return excludeRulesList
     }
 
+    /**
+     * Used to detect whether the specified file path needs to be obfuscated.
+     * If it is not allowed to be processed, returns true.
+     */
     fun checkExcludes(filePath: String): Boolean {
         val formattedPath = filePath.replace("\\", "/")
         val fileName = File(filePath).name
-        // 根据白名单规则过滤类文件
+        // 1.需要将生成类排除掉，防止被Transform处理产生问题
+        val genClzPath = RandomCodeObfuscator.convertToPathFormat("$genClassPkgName.$genClassName")
+        if (formattedPath.contains(genClzPath)) {
+            DLogger.error("checkExcludes, found gen path, ignore processing: $genClzPath >> $formattedPath")
+            return true
+        }
+        // 2.是否在处理的包名清单中(前提processingPackages不为空)
+        if (!isTrackInPackage(filePath)) {
+            DLogger.error("checkExcludes, not track in package: $processingPackages, curPath: $filePath")
+            return true
+        }
+        // 3.根据白名单规则过滤类文件
         val excludeList = getExcludeRules()
         excludeList.forEach {
             val regex = Regex(it)
-            val genClzPath = RandomCodeObfuscator.convertToPathFormat("$genClassPkgName.$genClassName")
-            KLogger.error("checkExcludes, cur gen class path: $genClzPath")
-            // Note: 需要将生成类也排除掉，防止被Transform处理产生问题
-            if (regex.matches(fileName) || formattedPath.contains(genClzPath)) {
-                KLogger.error("checkExcludes, exclude file matches: $formattedPath")
+            if (regex.matches(fileName)) {
+                DLogger.error("checkExcludes, exclude file matches: $formattedPath")
                 return true
             }
         }
         return false
     }
 
+    private fun isTrackInPackage(clzPath: String): Boolean {
+        val packageList = processingPackages
+        var isTrackPackage = false
+        packageList.forEach {
+            val pkgName = it.replace(".", "/")
+            if (clzPath.contains(pkgName)) {
+                isTrackPackage = true
+            }
+        }
+        return packageList.isEmpty() || isTrackPackage
+    }
+
     fun readConfigs() {
-        KLogger.error(" AppCodeGuardConfig read config: $mMap")
+        DLogger.error(" AppCodeGuardConfig read config: $mMap")
     }
 }

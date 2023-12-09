@@ -6,7 +6,7 @@ import com.dorck.app.code.guard.obfuscate.CodeObfuscatorFactory
 import com.dorck.app.code.guard.task.GenRandomClassTask
 import com.dorck.app.code.guard.transform.CodeGuardTransform
 import com.dorck.app.code.guard.utils.IOUtils
-import com.dorck.app.code.guard.utils.KLogger
+import com.dorck.app.code.guard.utils.DLogger
 import com.dorck.app.code.guard.utils.android
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -24,7 +24,7 @@ class CodeGuardPlugin : Plugin<Project> {
 
         val methodTraceTransform = CodeGuardTransform(extension, project)
         val curBuildVariant = extractBuildVariant(project)
-        KLogger.error("get current build variant: $curBuildVariant")
+        DLogger.error("get current build variant: $curBuildVariant")
         AppCodeGuardConfig.configCurrentBuildVariant(curBuildVariant)
         // Note: The plugin extension only initialized after `project.afterEvaluate` has been called, so we could not check configs here.
         // Recommended to use project properties.
@@ -42,17 +42,16 @@ class CodeGuardPlugin : Plugin<Project> {
                 // 收集用户配置的所有变体
                 variants.add(variant.name)
                 AppCodeGuardConfig.configAvailableVariants(variants)
-//                // 如果当前构建的变体和目前不是一个则跳过本次执行
-//                if (curBuildVariant != variant.name) {
-//                    return@forEach
-//                }
-                // 如果用户配置了变体约束，需要根据变体判断是否执行
-                val variantRules = extension.excludeRules
+                // 1.如果用户配置了变体约束，需要根据变体判断是否执行
+                // 2.若与当前正在构建的variant不是同一个，则跳过执行
+                val variantRules = extension.variantConstraints
                 if (variantRules.isNotEmpty() && !variantRules.contains(variant.name) || curBuildVariant != variant.name) {
+                    DLogger.error("variant [${variant.name}] ignore processing, current build variant: $curBuildVariant, rules: $variantRules")
                     return@afterEvaluate
                 }
+                DLogger.info("Pre check finished, keep processing...")
                 val preBuildTask = variant.preBuildProvider.get()
-//                val preBuildTask = project.tasks.getByName("preBuild")
+                // val preBuildTask = project.tasks.getByName("preBuild")
                 logMessage("Found preBuild task: ${preBuildTask.name}")
                 val createTaskName = "gen${variant.name.capitalize()}JavaTempClassTask"
                 var existGenTask = project.tasks.findByName(createTaskName)
@@ -65,10 +64,8 @@ class CodeGuardPlugin : Plugin<Project> {
                 }
                 preBuildTask.dependsOn(existGenTask)
                 // 编译完成后需要将混淆类从源码目录删除(在compile之后)
-                /*val compileJavaTask = variant.javaCompileProvider.get()
-                logMessage("Found compile task: ${compileJavaTask.name}")*/
                 // Note: 需要确保 Transform 处理完后再删除
-//                val transformTask = project.tasks.getByName("package${variant.name.capitalize()}")
+                // val packageTask = project.tasks.getByName("package${variant.name.capitalize()}")
                 val transformTask = project.tasks.getByName("transformClassesWith${CodeGuardTransform.TRANSFORM_NAME}For${variant.name.capitalize()}")
                 transformTask.doLast {
                     val isPackageExist = AppCodeGuardConfig.isPkgExist ?: false
@@ -98,10 +95,10 @@ class CodeGuardPlugin : Plugin<Project> {
             if (genClassFile.exists()) {
                 genClassFile.delete()
             }
-            KLogger.error("deleteGenClass, path: $classPath")
+            DLogger.error("deleteGenClass, path: $classPath")
         } else {
             val deleteDir = getDeleteDir()
-            KLogger.error("deleteGenClass, dir: $deleteDir")
+            DLogger.error("deleteGenClass, dir: $deleteDir")
             val genClassDir = File(deleteDir)
             if (genClassDir.exists()) {
                 IOUtils.deleteDirectory(genClassDir)
@@ -126,9 +123,9 @@ class CodeGuardPlugin : Plugin<Project> {
                 args.forEach {
                     if (!it.isNullOrEmpty()) {
                         if (it.contains("Debug")) {
-                            buildVariant = "Debug"
+                            buildVariant = DEBUG_VARIANT
                         } else if (it.contains("Release")) {
-                            buildVariant = "Release"
+                            buildVariant = RELEASE_VARIANT
                         }
                     }
                 }
@@ -142,6 +139,12 @@ class CodeGuardPlugin : Plugin<Project> {
     //project.the<SourceSetContainer>().getByName("main").allJava.sourceDirectories.singleFile.absolutePath
 
     private fun logMessage(message: String) {
-        KLogger.error("[CodeGuardPlugin] >>> $message")
+        DLogger.error("[CodeGuardPlugin] >>> $message")
+    }
+
+    companion object {
+        // 目前暂时仅支持系统默认的两种buildType
+        private const val DEBUG_VARIANT = "debug"
+        private const val RELEASE_VARIANT = "release"
     }
 }

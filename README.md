@@ -11,6 +11,15 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 - 支持 AGP 8.0 及其以下版本的功能适配
 - 支持通用ASM插件的基础库下沉，降低后续插件开发成本
 
+### 效果预览
+
+此处以 sample 中的 [`SimpleKtClass.kt`](./app/src/main/java/com/dorck/app/obfuscate/simple/SimpleKtClass.kt) 文件为例，对比一下通过本项目插件处理前后的效果：
+
+| 处理前                                                       | 处理后                                               |
+| ------------------------------------------------------------ | ---------------------------------------------------- |
+| <img src="./art/app_code_origin.png" alt="origin_preview" style="zoom:107%;" /> | ![obfuscated_preview](./art/app_code_obfuscated.png) |
+
+
 ### 快速使用
 // TODO
 
@@ -22,6 +31,7 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 - [ ] 混淆范围细化到函数级别
 - [ ] 将执行范围约束到某种变体（如 release）
 - [ ] 多线程并行执行，优化混淆速度
+- [ ] APK体积和编译时常影响分析
 
 ### 配置项
 
@@ -88,3 +98,20 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 基于以上规则，你就可以自由插入自己的定制代码了。如果你没有在 `app/build.gradle` 中设置 `obfuscationDict`，则默认由插件来自动帮你生成随机代码。
 
 当然，目前该配置灵活度不是那么高，后续会慢慢优化，如果您能够提供一些好的建议。
+
+### License
+```
+   Copyright [2023] [Moosphan]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+```

@@ -3,8 +3,8 @@ package com.dorck.app.code.guard.utils
 /**
  * A simple logger to print debug messages.
  */
-internal object KLogger {
-    private const val TAG = "KLogger"
+internal object DLogger {
+    private const val TAG = "DLogger"
     var debug = false
 
     /**

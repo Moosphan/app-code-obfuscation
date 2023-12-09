@@ -2,7 +2,7 @@ package com.dorck.app.code.guard.visitor
 
 import com.dorck.app.code.guard.obfuscate.IAppCodeObfuscator
 import com.dorck.app.code.guard.obfuscate.MethodEntity
-import com.dorck.app.code.guard.utils.KLogger
+import com.dorck.app.code.guard.utils.DLogger
 import org.objectweb.asm.*;
 
 class ObfuscationMethodVisitor(
@@ -36,7 +36,7 @@ class ObfuscationMethodVisitor(
 
     private fun insertCodeCall() {
         val randomMethodCall = obfuscator.nextCodeCall()
-        KLogger.error("visitCode >> randomMethodCall: ${randomMethodCall ?: "null"}")
+        DLogger.error("visitCode >> randomMethodCall: ${randomMethodCall ?: "null"}")
         randomMethodCall?.let {
             this.mCurCall = randomMethodCall
             val methodName = randomMethodCall.name

@@ -4,7 +4,7 @@ import com.dorck.app.code.guard.config.AppCodeGuardConfig
 import com.dorck.app.code.guard.extension.CodeGuardConfigExtension
 import com.dorck.app.code.guard.obfuscate.CodeObfuscatorFactory
 import com.dorck.app.code.guard.utils.CodeGenerator
-import com.dorck.app.code.guard.utils.KLogger
+import com.dorck.app.code.guard.utils.DLogger
 import com.dorck.app.code.guard.utils.getPackageName
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.OutputDirectory
@@ -17,12 +17,11 @@ abstract class GenRandomClassTask : DefaultTask() {
 
     @TaskAction
     fun generateClass() {
-        project.logger.error("Start generate class...")
+        project.logger.error("------> Start generate class... <------")
         val appID = project.getPackageName() ?: "com.x.y.z"
         // Inject applicationId into global configs.
         AppCodeGuardConfig.configApplicationId(appID)
         // Note: Need to keep this generated class in proguard rules.
-        // TODO: 支持可配置[类名、方法数、包名]，根据方法配置项列表生成
         val extension = project.extensions.findByType(CodeGuardConfigExtension::class.java)
         val obfuscator = CodeObfuscatorFactory.getCodeObfuscator(extension!!)
         obfuscator.initialize()
@@ -33,15 +32,15 @@ abstract class GenRandomClassTask : DefaultTask() {
         val genJavaCode = CodeGenerator.generateJavaClass(classEntity)
 
         val outputParentDir = File(outputDir, packageName.replace('.', '/') + "/")
-        // 判断生成的文件路径是否已存在(此处如果已经赋值过就跳过，防止variant下反复修改的情况)
+        // 判断生成的文件路径是否已存在(此处如果已经赋值过就跳过，防止不同variant下反复修改的情况)
         if (AppCodeGuardConfig.isPkgExist == null) {
             AppCodeGuardConfig.configPackageExistState(outputParentDir.exists())
         }
-        KLogger.error("generateClass, is gen pkg exist: ${outputParentDir.exists()}")
+        DLogger.error("generateClass, is gen pkg exist: ${outputParentDir.exists()}")
         val outputFile = File(outputDir, "${packageName.replace('.', '/')}/$className.java")
         outputFile.parentFile.mkdirs()
         outputFile.writeText(genJavaCode)
-        project.logger.error("Random java class code generation: $genJavaCode")
+        DLogger.info("Random java class code generation:\n $genJavaCode")
         AppCodeGuardConfig.configJavaCodeGenPath(outputFile.absolutePath)
         project.logger.error("[$className.java] generated succeed: ${outputFile.absolutePath}")
     }

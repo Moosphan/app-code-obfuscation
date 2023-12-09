@@ -5,7 +5,7 @@ import com.android.build.api.transform.*
 import com.android.build.api.transform.TransformInvocation
 import com.android.build.gradle.internal.pipeline.TransformManager
 import com.dorck.app.code.guard.utils.IOUtils
-import com.dorck.app.code.guard.utils.KLogger
+import com.dorck.app.code.guard.utils.DLogger
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
@@ -121,7 +121,7 @@ abstract class BaseTransform : Transform() {
      */
     private fun transformClassFile(src: File, dest: File) {
         if (src.isDirectory) {
-            KLogger.error("transformClassFile, src file is directory!")
+            DLogger.error("transformClassFile, src file is directory!")
             return
         }
         val inputStream = FileInputStream(src)
@@ -199,7 +199,7 @@ abstract class BaseTransform : Transform() {
     }
 
     private fun log(message: String) {
-        KLogger.info("[$TAG] $message")
+        DLogger.info("[$TAG] $message")
     }
 
     companion object {
