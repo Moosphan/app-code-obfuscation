@@ -21,29 +21,95 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 
 
 ### 快速使用
-// TODO
+> 目前稳定版本尚未发布，临时版本为：`0.0.1-SNAPSHOT`
+#### 1. 引入插件
+```kotlin
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+        // 依赖SNAPSHOT仓库源
+        maven(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
+        mavenLocal()
+    }
+
+    resolutionStrategy {
+        // 目前临时版本暂时通过此方式引入插件声明，后续发布到gradlePluginPortal再替换
+        eachPlugin {
+            if (requested.id.id == "cn.dorck.code.guarder") {
+                useModule("cn.dorck.android:code-guard-plugin:0.0.1-SNAPSHOT")
+            }
+        }
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        google()
+        mavenCentral()
+        // 依赖SNAPSHOT仓库源
+        maven(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
+        mavenLocal()
+    }
+}
+```
+#### 2. 使用插件
+首先在 `app/build.gradle.kts` 中引入混淆插件：
+```kotlin
+plugins {
+    id("com.android.application")
+    // 引入增强版混淆插件
+    id("cn.dorck.code.guarder")
+}
+```
+然后配置插件相关特性：
+```kotlin
+codeGuard {
+    // 开启插件
+    enable = true
+    // 设置插件执行的范围(若不设置则默认所有buildType都会执行)
+    variantConstraints = hashSetOf("debug")
+    // 需要混淆处理的目标代码包路径(用于局部代码混淆时使用，不设置则默认处理全局代码)
+    processingPackages = hashSetOf(
+        "com.dorck.app.obfuscate.simple"
+    )
+}
+```
+更多的特性参考后面的配置项一栏具体介绍。
+
+#### 3. 关于插件自定义混淆字典
+> 目前该功能尚在开发中，暂不开放，当前仅支持插件内部的默认随机混淆规则。
 
 ### 当前进展
 // TODO：放到 `GitHub >> Projects` 中管理
 - [X] 实现默认内置的类混淆基本功能
 - [X] 实现方法内的随机代码混淆
-- [ ] 提供更加灵活的配置项（类、方法、代码块等混淆配置）
-- [ ] 混淆范围细化到函数级别
-- [ ] 将执行范围约束到某种变体（如 release）
+- [x] 提供更加灵活的配置项（类、方法、代码块等混淆配置）
+- [x] 混淆范围细化到函数级别
+- [x] 将执行范围约束到某种变体（如 release）
 - [ ] 多线程并行执行，优化混淆速度
 - [ ] APK体积和编译时常影响分析
+- [ ] 自定义混淆字典功能
 
 ### 配置项
 
-| 可配置项             | 说明                                       | 类型           |
-| -------------------- |------------------------------------------| -------------- |
-| `maxMethodCount`     | 类中允许插入方法的数量上限                            | `int`          |
-| `maxFieldCount`      | 类中允许插入变量的数量上限                            | `int`          |
-| `isAutoAdapted`      | 是否根据当前类或方法的具体情况自动适配插入的方法或变量的数量           | `boolean`      |
-| `processingPackages` | 需要混淆处理的包路径（若未设置，则默认所有路径）                 | `List<String>` |
-| `isSkipJars`         | 是否跳过第三方 jar 的混淆增强（默认为 `true`）            | `boolean`      |
-| `isSkipAbsClass`     | 是否跳过抽象类的混淆增强（默认为 `true`）                 | `boolean`      |
-| `obfuscationDict`    | 自定义的混淆代码字典文件，可自行配置插入的代码和离散程度（格式参照下方详细介绍） | `String`       |
+| 可配置项                     | 说明                               | 类型             |
+|:-------------------------|----------------------------------|----------------|
+| `maxMethodCount`         | 类中允许插入方法的数量上限                    | `int`          |
+| `maxFieldCount`          | 类中允许插入变量的数量上限                    | `int`          |
+| `isInsertCountAutoAdapted` | 是否根据当前类或方法的具体情况自动适配插入的方法或变量的数量   | `boolean`      |
+| `processingPackages`     | 需要混淆处理的包路径（若未设置，则默认所有路径）         | `HashSet<String>` |
+| `isSkipJars`             | 是否跳过第三方 jar 的混淆增强（默认为 `true`）    | `boolean`      |
+| `obfuscationDict`        | 自定义的混淆代码字典文件，可自行配置插入的代码和离散程度（格式参照下方详细介绍） | `String`       |
+| `isSkipAbsClass`         | 是否跳过抽象类的混淆增强（默认为 `true`）         | `boolean`      |
+| `methodObfuscateEnable`  | 是否对方法进行混淆 （默认为 `true`）           | `boolean`      |
+| `maxCodeLineCount`       | 方法内允许插入的最大代码行数 （默认为 6 ）          | `int`          |
+| `generatedClassPkg`      | 生成方法内随机代码调用的目标类的包名（仅在开启方法内混淆时使用） | `String`       |
+| `generatedClassName`     | 生成方法内随机代码调用的目标类的类名（仅在开启方法内混淆时使用） | `String`       |
+| `generatedMethodCount`   | 生成方法内随机代码调用的目标类中方法数量（仅在开启方法内混淆时使用） | `int`          |
+| `excludeRules`           | 混淆插件处理的排除规则（可理解为白名单，用于控制混淆范围） | `HashSet<String>` |
+| `variantConstraints`     | 设置插件执行的范围(若不设置则默认所有buildType都会执行) | `HashSet<String>` |
 
 ### 混淆字典格式说明
 

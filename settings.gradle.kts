@@ -3,13 +3,14 @@ pluginManagement {
         google()
         mavenCentral()
         gradlePluginPortal()
+        maven(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
         mavenLocal()
     }
 
     resolutionStrategy {
         eachPlugin {
             if (requested.id.id == "cn.dorck.code.guarder") {
-                useModule("com.dorck.android:code-guard-plugin:0.1.0-LOCAL")
+                useModule("cn.dorck.android:code-guard-plugin:0.0.1-SNAPSHOT")
             }
         }
     }
@@ -19,6 +20,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
         mavenLocal()
     }
 }

@@ -36,7 +36,7 @@ android {
 }
 
 codeGuard {
-    enable = false
+    enable = true
     variantConstraints = hashSetOf("debug")
     processingPackages = hashSetOf(
         "com.dorck.app.obfuscate.simple"
