@@ -164,8 +164,12 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
         val genMethodList = mutableListOf<MethodEntity>()
         repeat(count) {
             // 注意这个类生成的方法必须是 public static 类型的
-            val name = generateRandomName(maxLength = FIELD_NAME_MAX_LEN)
+            val name = generateRandomName(maxLength = 3)
             val desc = generateRandomDescriptor()
+            // 方法去重处理，防止类编译出错
+            if (isMethodAlreadyExist(name, desc, genMethodList)) {
+                return@repeat
+            }
             val methodEntity = MethodEntity(
                 name,
                 desc,
@@ -176,6 +180,18 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
             genMethodList.add(methodEntity)
         }
         return genMethodList
+    }
+
+    private fun isMethodAlreadyExist(name: String, desc: String, methodList: List<MethodEntity>): Boolean {
+        if (methodList.isEmpty()) {
+            return false
+        }
+        methodList.forEach {
+            if (name == it.name && desc == it.desc) {
+                return true
+            }
+        }
+        return false
     }
 
     fun convertToPathFormat(className: String): String {
