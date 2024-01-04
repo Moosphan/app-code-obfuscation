@@ -71,7 +71,7 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
     /**
      * 随机生成属性名 or 方法名
      */
-    private fun generateRandomName(prefix: String = BASE_NAME_PREFIX, maxLength: Int = 6): String {
+    fun generateRandomName(prefix: String = BASE_NAME_PREFIX, maxLength: Int = 6): String {
         val sb = StringBuilder(prefix)
         for (i in 0 until maxLength - prefix.length) {
             val randomChar: Char = CHARACTERS[random.nextInt(CHARACTERS.length)]

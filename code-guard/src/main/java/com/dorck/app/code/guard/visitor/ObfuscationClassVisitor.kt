@@ -1,6 +1,5 @@
 package com.dorck.app.code.guard.visitor
 
-import com.dorck.app.code.guard.config.AppCodeGuardConfig
 import com.dorck.app.code.guard.extension.CodeGuardConfigExtension
 import com.dorck.app.code.guard.obfuscate.CodeObfuscatorFactory
 import com.dorck.app.code.guard.obfuscate.FieldEntity
@@ -117,7 +116,7 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
     }
 
     private fun insertRandomField(obfuscator: IAppCodeObfuscator): FieldVisitor? {
-        DLogger.info("insertRandomField >> start insert field, progress: [${mFieldInsertionCount+1}/$mMaxFieldsSize]")
+        DLogger.info("insertRandomField >> start insert field, progress: [${mFieldInsertionCount+1}/$`mMaxFieldsSize`]")
         val randomField = obfuscator.nextFiled()
         // Ignore existing fields with the same name.
         if (!isFieldExist(randomField.name, randomField.type)) {
@@ -179,7 +178,7 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
         // Select one-half of the total number of original attributes of the current class as the final insertion quantity.
         val originFields = mClassFields.filter { !it.isInserted }
         val dynamicInsertCount = (originFields.size * DEFAULT_ADAPTIVE_COUNT_RATIO).toInt()
-        mMaxFieldsSize = max(min(dynamicInsertCount, extension.maxFieldCount), AppCodeGuardConfig.MIN_FIELD_COUNT)
+        mMaxFieldsSize = max(min(dynamicInsertCount, extension.maxFieldCount), extension.minFieldCount)
     }
 
     private fun isFieldExist(name: String, descriptor: String): Boolean {
@@ -207,7 +206,7 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
         // Select one-half of the total number of original attributes of the current class as the final insertion quantity.
         val originMethods = mClassMethods.filter { !it.fromInsert }
         val dynamicInsertCount = (originMethods.size * DEFAULT_ADAPTIVE_COUNT_RATIO).toInt()
-        mMaxMethodsSize = max(min(dynamicInsertCount, extension.maxMethodCount), AppCodeGuardConfig.MIN_METHOD_COUNT)
+        mMaxMethodsSize = max(min(dynamicInsertCount, extension.maxMethodCount), extension.minMethodCount)
     }
 
     private fun isMethodExist(name: String, descriptor: String): Boolean {

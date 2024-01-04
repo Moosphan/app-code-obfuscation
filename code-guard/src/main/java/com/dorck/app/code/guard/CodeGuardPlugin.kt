@@ -8,6 +8,7 @@ import com.dorck.app.code.guard.transform.CodeGuardTransform
 import com.dorck.app.code.guard.utils.IOUtils
 import com.dorck.app.code.guard.utils.DLogger
 import com.dorck.app.code.guard.utils.android
+import com.dorck.app.code.guard.utils.handleEachVariant
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import java.io.File
@@ -22,7 +23,7 @@ class CodeGuardPlugin : Plugin<Project> {
         logMessage("[CodeGuardPlugin] => applying..")
         val extension = project.extensions.create("codeGuard", CodeGuardConfigExtension::class.java)
 
-        val methodTraceTransform = CodeGuardTransform(extension, project)
+        val codeGuardTransform = CodeGuardTransform(extension, project)
         val curBuildVariant = extractBuildVariant(project)
         DLogger.error("get current build variant: $curBuildVariant")
         AppCodeGuardConfig.configCurrentBuildVariant(curBuildVariant)
@@ -38,7 +39,7 @@ class CodeGuardPlugin : Plugin<Project> {
             }
             // 基于preBuild任务时机来插入源码到指定`src/main/java`下，便于混淆代码参与到compile阶段
             val variants = HashSet<String>()
-            project.android().applicationVariants.forEach { variant ->
+            project.handleEachVariant { variant ->
                 // 收集用户配置的所有变体
                 variants.add(variant.name)
                 AppCodeGuardConfig.configAvailableVariants(variants)
@@ -47,7 +48,7 @@ class CodeGuardPlugin : Plugin<Project> {
                 val variantRules = extension.variantConstraints
                 if (variantRules.isNotEmpty() && !variantRules.contains(variant.name) || curBuildVariant != variant.name) {
                     DLogger.error("variant [${variant.name}] ignore processing, current build variant: $curBuildVariant, rules: $variantRules")
-                    return@afterEvaluate
+                    return@handleEachVariant
                 }
                 DLogger.info("Pre check finished, keep processing...")
                 val preBuildTask = variant.preBuildProvider.get()
@@ -75,7 +76,7 @@ class CodeGuardPlugin : Plugin<Project> {
             }
 
         }
-        project.android().registerTransform(methodTraceTransform)
+        project.android().registerTransform(codeGuardTransform)
     }
 
     private fun createGenClassOutputMainDir(): File {

@@ -2,6 +2,7 @@ package com.dorck.app.code.guard.visitor
 
 import com.dorck.app.code.guard.obfuscate.IAppCodeObfuscator
 import com.dorck.app.code.guard.obfuscate.MethodEntity
+import com.dorck.app.code.guard.obfuscate.RandomCodeObfuscator
 import com.dorck.app.code.guard.utils.DLogger
 import org.objectweb.asm.*;
 
@@ -97,7 +98,7 @@ class ObfuscationMethodVisitor(
             "B" -> mv.visitLdcInsn(0.toByte())       // Default value for byte
             "S" -> mv.visitLdcInsn(0.toShort())      // Default value for short
             "J" -> mv.visitLdcInsn(0L)         // Default value for long
-            "Ljava/lang/String;" -> mv.visitLdcInsn("DefaultString") // Default value for String
+            "Ljava/lang/String;" -> mv.visitLdcInsn(RandomCodeObfuscator.generateRandomName(maxLength = 2)) // Default value for String
             "" -> { // No params
                 // do nothing
             }

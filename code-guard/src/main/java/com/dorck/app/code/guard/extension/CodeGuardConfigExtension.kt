@@ -19,9 +19,13 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     // Whether to skip obfuscate abstract classes.
     var isSkipAbsClass: Boolean = true
     // Maximum number of methods in a class.
-    var maxMethodCount: Int = AppCodeGuardConfig.MAX_METHOD_COUNT
+    var maxMethodCount: Int = AppCodeGuardConfig.DEFAULT_MAX_METHOD_COUNT
     // Maximum number of fields in a class.
-    var maxFieldCount: Int = AppCodeGuardConfig.MAX_FIELD_COUNT
+    var maxFieldCount: Int = AppCodeGuardConfig.DEFAULT_MAX_FIELD_COUNT
+    // Minimum number of inserted methods in a class.
+    var minMethodCount: Int = AppCodeGuardConfig.DEFAULT_MIN_METHOD_COUNT
+    // Minimum number of inserted fields in a class.
+    var minFieldCount: Int = AppCodeGuardConfig.DEFAULT_MIN_FIELD_COUNT
     // Whether to enable method obfuscation.
     var methodObfuscateEnable: Boolean = true
     // The maximum number of lines of code allowed to be inserted within a method.
@@ -54,6 +58,8 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
                 isAutoAdapted: $isInsertCountAutoAdapted,
                 maxFieldCount: $maxFieldCount,
                 maxMethodCount: $maxMethodCount,
+                minMethodCount: $minMethodCount,
+                minFieldCount: $minFieldCount,
                 methodObfuscateEnable: $methodObfuscateEnable,
                 maxCodeLineCount: $maxCodeLineCount,
                 generatedClassPkg: $generatedClassPkg,

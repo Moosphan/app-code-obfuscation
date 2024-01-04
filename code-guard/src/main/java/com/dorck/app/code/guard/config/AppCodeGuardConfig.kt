@@ -15,10 +15,10 @@ import java.util.concurrent.ConcurrentHashMap
  * @since 2023/12/04
  */
 object AppCodeGuardConfig {
-    const val MAX_FIELD_COUNT = 10
-    const val MAX_METHOD_COUNT = 8
-    const val MIN_FIELD_COUNT = 5
-    const val MIN_METHOD_COUNT = 2
+    const val DEFAULT_MAX_FIELD_COUNT = 10
+    const val DEFAULT_MAX_METHOD_COUNT = 8
+    const val DEFAULT_MIN_FIELD_COUNT = 5
+    const val DEFAULT_MIN_METHOD_COUNT = 2
 
     // 默认的排除规则，需要规避掉系统使用的特殊class
     val DEFAULT_EXCLUDE_RULES = listOf("(R\\.class|BuildConfig\\.class)")
@@ -30,7 +30,7 @@ object AppCodeGuardConfig {
 
     val isUseDefaultStrategy: Boolean by mMap           // 是否使用插件默认的随机策略
     val isEnableCodeObfuscateInMethod: Boolean by mMap  // 是否启用在方法内插入混淆代码(注意监测对包体积和编译时常的影响)
-    val processingPackages: HashSet<String> by mMap        // 需要插件进行混淆处理的包路径(若未配置则默认处理所有类)
+    val processingPackages: HashSet<String> by mMap     // 需要插件进行混淆处理的包路径(若未配置则默认处理所有类)
     val excludeRulesList: HashSet<String> by mMap       // 排除混淆的规则集合
     val availableVariants: HashSet<String> by mMap      // 收集当前project下配置的所有变体(默认`android -> buildTypes`下所有变体都会执行)
     val currentBuildVariant: String by mMap             // 当前用户执行的 variant (如: 执行 `assembleDebug`)
@@ -109,7 +109,7 @@ object AppCodeGuardConfig {
             return true
         }
         // 2.是否在处理的包名清单中(前提processingPackages不为空)
-        if (!isTrackInPackage(filePath)) {
+        if (!isTrackInPackage(formattedPath)) {
             DLogger.error("checkExcludes, not track in package: $processingPackages, curPath: $filePath")
             return true
         }
