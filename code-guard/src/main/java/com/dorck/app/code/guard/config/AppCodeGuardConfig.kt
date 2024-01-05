@@ -25,6 +25,7 @@ object AppCodeGuardConfig {
 
     private var mMap: ConcurrentHashMap<String, Any> = ConcurrentHashMap()
     val javaCodeGenPath: String by mMap
+    val javaGenClassPaths: HashSet<String> by mMap       // 生成的类文件路径
     val javaCodeGenMainDir: String by mMap              // src/main/java目录
     val applicationId: String by mMap
 
@@ -36,22 +37,27 @@ object AppCodeGuardConfig {
     val currentBuildVariant: String by mMap             // 当前用户执行的 variant (如: 执行 `assembleDebug`)
 
     // Class generation configs (生成供目标混淆函数内生成代码调用的类).
+    val genClassCount: Int by mMap                      // 用于指定生成代码调用的目标类的数量 (可一定程度降低相似度、提高理解难度)
+    // TODO: 单class情况待废弃
     val genClassName: String by mMap
     val genClassPkgName: String by mMap
     val genClassMethodCount: Int by mMap
 
     var isPkgExist: Boolean? = null                     // 生成类之前是否已存在该包名路径(用于防止误删项目源码)
+    var packageExistStates: HashMap<String, Boolean?> = hashMapOf()
 
     fun configureFromExtension(extension: CodeGuardConfigExtension) {
         mMap["genClassName"] = extension.generatedClassName
         mMap["genClassPkgName"] = extension.generatedClassPkg
         mMap["genClassMethodCount"] = extension.generatedMethodCount
+        mMap["genClassCount"] = extension.genClassCount
         mMap["isUseDefaultStrategy"] = !CodeObfuscatorFactory.checkFileIfExist(extension.obfuscationDict)
         mMap["isEnableCodeObfuscateInMethod"] = extension.methodObfuscateEnable
         mMap["processingPackages"] = extension.processingPackages
         mMap["excludeRulesList"] = extension.excludeRules.also {
             it.addAll(DEFAULT_EXCLUDE_RULES)
         }
+        mMap["javaGenClassPaths"] = HashSet<String>()
         readConfigs()
     }
 
@@ -91,6 +97,10 @@ object AppCodeGuardConfig {
         mMap["currentBuildVariant"] = variant
     }
 
+    fun recordGenClassPath(absolutePath: String) {
+        javaGenClassPaths.add(absolutePath)
+    }
+
     private fun getExcludeRules(): HashSet<String> {
         return excludeRulesList
     }
@@ -104,6 +114,7 @@ object AppCodeGuardConfig {
         val fileName = File(filePath).name
         // 1.需要将生成类排除掉，防止被Transform处理产生问题
         val genClzPath = RandomCodeObfuscator.convertToPathFormat("$genClassPkgName.$genClassName")
+
         if (formattedPath.contains(genClzPath)) {
             DLogger.error("checkExcludes, found gen path, ignore processing: $genClzPath >> $formattedPath")
             return true

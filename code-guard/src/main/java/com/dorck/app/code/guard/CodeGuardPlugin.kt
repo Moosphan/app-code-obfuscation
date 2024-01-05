@@ -69,9 +69,10 @@ class CodeGuardPlugin : Plugin<Project> {
                 // val packageTask = project.tasks.getByName("package${variant.name.capitalize()}")
                 val transformTask = project.tasks.getByName("transformClassesWith${CodeGuardTransform.TRANSFORM_NAME}For${variant.name.capitalize()}")
                 transformTask.doLast {
-                    val isPackageExist = AppCodeGuardConfig.isPkgExist ?: false
-                    logMessage("Start delete generated class, pkg exist: $isPackageExist, genPkgName: ${AppCodeGuardConfig.genClassPkgName}")
-                    deleteGenClass(isPackageExist)
+//                    val isPackageExist = AppCodeGuardConfig.isPkgExist ?: false
+//                    logMessage("Start delete generated class, pkg exist: $isPackageExist, genPkgName: ${AppCodeGuardConfig.genClassPkgName}")
+//                    deleteGenClass(isPackageExist)
+                    batchDeleteGenClass()
                 }
             }
 
@@ -92,6 +93,36 @@ class CodeGuardPlugin : Plugin<Project> {
         // Note: 如果包名之前不存在，需要将创建的包目录也一并删除(获取子包名的第一个目录)
         if (isPkgExist) {
             val classPath = AppCodeGuardConfig.javaCodeGenPath
+            val genClassFile = File(classPath)
+            if (genClassFile.exists()) {
+                genClassFile.delete()
+            }
+            DLogger.error("deleteGenClass, path: $classPath")
+        } else {
+            val deleteDir = getDeleteDir()
+            DLogger.error("deleteGenClass, dir: $deleteDir")
+            val genClassDir = File(deleteDir)
+            if (genClassDir.exists()) {
+                IOUtils.deleteDirectory(genClassDir)
+            }
+        }
+    }
+
+    private fun batchDeleteGenClass() {
+        // Note: 如果包名之前不存在，需要将创建的包目录也一并删除(获取子包名的第一个目录)
+        val genClassPaths = AppCodeGuardConfig.javaGenClassPaths
+        DLogger.info("batchDeleteGenClass, gen classes: $genClassPaths")
+        genClassPaths.forEach {
+            val key = extractPackageAndClassName(it)
+            val pgkExist = AppCodeGuardConfig.packageExistStates[key] ?: false
+            DLogger.error("batchDeleteGenClass, key => $key is exist: $pgkExist")
+            deleteGenClass(pgkExist, it)
+        }
+    }
+
+    private fun deleteGenClass(isPkgExist: Boolean, classPath: String) {
+        // Note: 如果包名之前不存在，需要将创建的包目录也一并删除(获取子包名的第一个目录)
+        if (isPkgExist) {
             val genClassFile = File(classPath)
             if (genClassFile.exists()) {
                 genClassFile.delete()
@@ -142,6 +173,27 @@ class CodeGuardPlugin : Plugin<Project> {
     private fun logMessage(message: String) {
         DLogger.error("[CodeGuardPlugin] >>> $message")
     }
+
+    private fun extractPackageAndClassName(filePath: String): String? {
+        val file = File(filePath)
+
+        if (!file.exists() || !file.isFile) {
+            return null
+        }
+
+        val srcMainJava = "src${File.separator}main${File.separator}java"
+        val srcMainJavaIndex = filePath.indexOf(srcMainJava)
+
+        if (srcMainJavaIndex == -1) {
+            return null
+        }
+
+        val packagePath =
+            filePath.substring(srcMainJavaIndex + srcMainJava.length + 1, filePath.length - 5)
+
+        return packagePath.replace(File.separator, ".")
+    }
+
 
     companion object {
         // 目前暂时仅支持系统默认的两种buildType

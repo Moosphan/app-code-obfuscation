@@ -1,6 +1,7 @@
 package com.dorck.app.code.guard.obfuscate
 
 import com.dorck.app.code.guard.config.AppCodeGuardConfig
+import com.dorck.app.code.guard.utils.DLogger
 import org.objectweb.asm.Opcodes
 
 /**
@@ -22,10 +23,11 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
     private val METHOD_PARAM_TYPES = arrayListOf("()V", "(B)V", "(S)V", "(I)V", "(J)V", "(F)V", "(D)V", "(C)V", "(Z)V", "(Ljava/lang/String;)V")
     // 用于插入代码调用的目标类(可通过插件自定义或使用默认策略)
     override var mClassEntity: SimpleClassEntity? = null
+    override var mGenClassList: MutableList<SimpleClassEntity> = mutableListOf()
 
     override fun initialize() {
         if (AppCodeGuardConfig.isEnableCodeObfuscateInMethod) {
-            var clzName = randomShortClassName()
+            /*var clzName = randomShortClassName()
             if (AppCodeGuardConfig.genClassName.isNotEmpty()) {
                 clzName = AppCodeGuardConfig.genClassName
             } else {
@@ -42,11 +44,39 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
             // Note: Class name 格式需要为: 包名 + 类名
             val fullClassName = convertToPathFormat("$packageName.$clzName")
             mClassEntity = SimpleClassEntity(packageName, clzName,
-                generateMethodList(fullClassName, AppCodeGuardConfig.genClassMethodCount))
+                generateMethodList(fullClassName, AppCodeGuardConfig.genClassMethodCount))*/
+
+            // Generate code calling classes in batches.
+            val genClassCount = AppCodeGuardConfig.genClassCount
+            if (genClassCount > 0) {
+                repeat(genClassCount) {
+                    var packageName = randomPackageName()
+                    if (AppCodeGuardConfig.genClassPkgName.isNotEmpty()) {
+                        packageName = AppCodeGuardConfig.genClassPkgName
+                    }
+                    var clzName = randomShortClassName()
+                    while (checkIfClassExist(packageName, clzName)) {
+                        clzName = randomShortClassName()
+                    }
+                    // Note: Class name 格式需要为: 包名 + 类名
+                    val classEntity = SimpleClassEntity(packageName, clzName,
+                        generateMethodList(
+                            convertToPathFormat("$packageName.$clzName"),
+                            random.nextInt(6) + 10
+                        )
+                    )
+                    mGenClassList.add(classEntity)
+                }
+                // Initialize package exist state.
+                val pkgExistStates = AppCodeGuardConfig.packageExistStates
+                mGenClassList.forEach {
+                    pkgExistStates["${it.pkgName}.${it.className}"] = null
+                }
+            }
         }
     }
 
-    override fun nextFiled(): FieldEntity {
+    override fun nextField(): FieldEntity {
         val name = generateRandomName(maxLength = FIELD_NAME_MAX_LEN)
         val accessType = generateRandomAccess()
         val type = generateRandomType()
@@ -61,10 +91,18 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
 
     override fun nextCodeCall(): MethodEntity? {
         // 从生成的类中随机获取一个方法调用
-        if (mClassEntity == null) {
+       /* if (mClassEntity == null) {
             return null
         }
         val methodCalls = mClassEntity?.methods ?: mutableListOf()
+        return methodCalls[random.nextInt(methodCalls.size)]*/
+        if (mGenClassList.isEmpty()) {
+            return null
+        }
+        val methodCalls = mutableListOf<MethodEntity>()
+        mGenClassList.forEach {
+            methodCalls.addAll(it.methods)
+        }
         return methodCalls[random.nextInt(methodCalls.size)]
     }
 
@@ -157,6 +195,20 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
     }
 
     /**
+     * 支持多参数的随机方法签名
+     * @param range 参数数量随机变化范围
+     */
+    private fun genMultiRandomDescriptor(range: Int = 5): String {
+        val paramCount = random.nextInt(range)
+        val desc = StringBuilder("(")
+        repeat(paramCount) {
+            desc.append(BASIC_TYPES[random.nextInt(BASIC_TYPES.size)])
+        }
+        desc.append(")V")
+        return desc.toString()
+    }
+
+    /**
      * 随机生成指定数量的空方法
      * Note: [className]需要拼接为全路径限定名 e.g, `androidx/appcompat/app/AppCompatActivity`
      */
@@ -165,7 +217,9 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
         repeat(count) {
             // 注意这个类生成的方法必须是 public static 类型的
             val name = generateRandomName(maxLength = 3)
-            val desc = generateRandomDescriptor()
+//            val desc = generateRandomDescriptor()
+            val desc = genMultiRandomDescriptor()
+            DLogger.error("generateMethodList, desc: $desc")
             // 方法去重处理，防止类编译出错
             if (isMethodAlreadyExist(name, desc, genMethodList)) {
                 return@repeat
@@ -188,6 +242,18 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
         }
         methodList.forEach {
             if (name == it.name && desc == it.desc) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun checkIfClassExist(packageName: String, className: String): Boolean {
+        if (mGenClassList.isEmpty()) {
+            return false
+        }
+        mGenClassList.forEach {
+            if (it.className == className && it.pkgName == packageName) {
                 return true
             }
         }
