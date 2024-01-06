@@ -46,6 +46,8 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
             mClassEntity = SimpleClassEntity(packageName, clzName,
                 generateMethodList(fullClassName, AppCodeGuardConfig.genClassMethodCount))*/
 
+            // Reset data.
+            AppCodeGuardConfig.resetGenData()
             // Generate code calling classes in batches.
             val genClassCount = AppCodeGuardConfig.genClassCount
             if (genClassCount > 0) {
@@ -70,8 +72,10 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
                 // Initialize package exist state.
                 val pkgExistStates = AppCodeGuardConfig.packageExistStates
                 mGenClassList.forEach {
+                    AppCodeGuardConfig.genPackagePaths.add(it.pkgName)
                     pkgExistStates["${it.pkgName}.${it.className}"] = null
                 }
+                DLogger.error("initialize, gen pkg paths: ${AppCodeGuardConfig.genPackagePaths}")
             }
         }
     }
@@ -219,7 +223,6 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
             val name = generateRandomName(maxLength = 3)
 //            val desc = generateRandomDescriptor()
             val desc = genMultiRandomDescriptor()
-            DLogger.error("generateMethodList, desc: $desc")
             // 方法去重处理，防止类编译出错
             if (isMethodAlreadyExist(name, desc, genMethodList)) {
                 return@repeat

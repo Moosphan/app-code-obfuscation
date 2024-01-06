@@ -60,7 +60,6 @@ object CodeGenerator {
     }
 
     private fun parseType(paramDesc: String): String {
-        DLogger.error("parseType, desc: $paramDesc")
         return when (paramDesc) {
             "V" -> "void"
             "Z" -> "boolean"

@@ -40,6 +40,7 @@ class CodeGuardPlugin : Plugin<Project> {
             // 基于preBuild任务时机来插入源码到指定`src/main/java`下，便于混淆代码参与到compile阶段
             val variants = HashSet<String>()
             project.handleEachVariant { variant ->
+                DLogger.error("===========handle current variant: ${variant.name}")
                 // 收集用户配置的所有变体
                 variants.add(variant.name)
                 AppCodeGuardConfig.configAvailableVariants(variants)
@@ -89,7 +90,7 @@ class CodeGuardPlugin : Plugin<Project> {
         return dir
     }
 
-    private fun deleteGenClass(isPkgExist: Boolean) {
+    /*private fun deleteGenClass(isPkgExist: Boolean) {
         // Note: 如果包名之前不存在，需要将创建的包目录也一并删除(获取子包名的第一个目录)
         if (isPkgExist) {
             val classPath = AppCodeGuardConfig.javaCodeGenPath
@@ -106,43 +107,42 @@ class CodeGuardPlugin : Plugin<Project> {
                 IOUtils.deleteDirectory(genClassDir)
             }
         }
-    }
+    }*/
 
     private fun batchDeleteGenClass() {
         // Note: 如果包名之前不存在，需要将创建的包目录也一并删除(获取子包名的第一个目录)
         val genClassPaths = AppCodeGuardConfig.javaGenClassPaths
         DLogger.info("batchDeleteGenClass, gen classes: $genClassPaths")
         genClassPaths.forEach {
-            val key = extractPackageAndClassName(it)
+            val key = extractPackageAndClassName(it.classPath)
             val pgkExist = AppCodeGuardConfig.packageExistStates[key] ?: false
             DLogger.error("batchDeleteGenClass, key => $key is exist: $pgkExist")
             deleteGenClass(pgkExist, it)
         }
     }
 
-    private fun deleteGenClass(isPkgExist: Boolean, classPath: String) {
+    private fun deleteGenClass(isPkgExist: Boolean, classBean: AppCodeGuardConfig.GenClassData) {
         // Note: 如果包名之前不存在，需要将创建的包目录也一并删除(获取子包名的第一个目录)
         if (isPkgExist) {
-            val genClassFile = File(classPath)
+            val genClassFile = File(classBean.classPath)
             if (genClassFile.exists()) {
                 genClassFile.delete()
             }
-            DLogger.error("deleteGenClass, path: $classPath")
+            DLogger.error("deleteGenClass, path: ${classBean.classPath}")
         } else {
-            val deleteDir = getDeleteDir()
-            DLogger.error("deleteGenClass, dir: $deleteDir")
+            val deleteDir = getDeleteDir(classBean.pkgName)
             val genClassDir = File(deleteDir)
             if (genClassDir.exists()) {
                 IOUtils.deleteDirectory(genClassDir)
             }
+            DLogger.error("deleteGenClass dir succeed: $deleteDir")
         }
     }
 
-    private fun getDeleteDir(): String {
+    private fun getDeleteDir(classPkgName: String): String {
         val mainDir = AppCodeGuardConfig.javaCodeGenMainDir
         val applicationId = AppCodeGuardConfig.applicationId
-        val genPkg = AppCodeGuardConfig.genClassPkgName
-        val temp = genPkg.replace(applicationId, "")
+        val temp = classPkgName.replace(applicationId, "")
         val baseDir = applicationId + "." + temp.split(".")[1]
         return mainDir + baseDir.replace(".", "/") + "/"
     }

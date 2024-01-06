@@ -48,8 +48,9 @@ abstract class GenRandomClassTask : DefaultTask() {
             outputFile.writeText(genJavaCode)
             DLogger.info("Random java class code generation:\n $genJavaCode")
 //            AppCodeGuardConfig.configJavaCodeGenPath(outputFile.absolutePath)
-            AppCodeGuardConfig.recordGenClassPath(outputFile.absolutePath)
+            AppCodeGuardConfig.recordGenClassPath(packageName, className, outputFile.absolutePath)
             project.logger.error("[$className.java] generated succeed: ${outputFile.absolutePath}")
         }
+        DLogger.error("Gen classes finished with count: ${obfuscator.getGenClassEntityList().size}.")
     }
 }
