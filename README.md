@@ -34,7 +34,7 @@ plugins {
 }
 ```
 #### 2. 使用插件
-然后在 `build.gradle` 中配置插件相关特性：
+然后在 `build.gradle.kts` 中配置插件相关特性：
 ```kotlin
 codeGuard {
     // 开启插件
@@ -59,30 +59,31 @@ codeGuard {
 - [x] 混淆范围细化到函数级别
 - [x] 将执行范围约束到某种变体（如 release）
 - [x] 支持针对 `Library module` 的混淆操作
-- [ ] 支持针对多个随机类的方法调用
-- [ ] 针对方法调用提供多参数支持
+- [x] 支持针对多个随机类的方法调用
+- [x] 针对随机方法调用提供多参数支持
 - [ ] 多线程并行执行，优化混淆速度
 - [ ] APK体积和编译时常影响分析
 - [ ] 自定义混淆字典功能
 
 ### 配置项
 
-| 可配置项                       | 说明                                       | 类型             |
-|:---------------------------|------------------------------------------|----------------|
-| `maxMethodCount`           | 类中允许插入方法的数量上限（默认为 `8` ）                    | `int`          |
-| `maxFieldCount`            | 类中允许插入变量的数量上限（默认为 `10` ）                   | `int`          |
-| `minMethodCount`           | 类中允许插入方法的数量下限（默认为 `2` ）                    | `int`          |
-| `minFieldCount`            | 类中允许插入变量的数量下限（默认为 `5` ）                    | `int`          |
-| `isInsertCountAutoAdapted` | 是否根据当前类或方法的具体情况自动适配插入的方法或变量的数量           | `boolean`      |
+| 可配置项                       | 说明                                       | 类型                |
+|:---------------------------|------------------------------------------|-------------------|
+| `maxMethodCount`           | 类中允许插入方法的数量上限（默认为 `8` ）                  | `int`             |
+| `maxFieldCount`            | 类中允许插入变量的数量上限（默认为 `10` ）                 | `int`             |
+| `minMethodCount`           | 类中允许插入方法的数量下限（默认为 `2` ）                  | `int`             |
+| `minFieldCount`            | 类中允许插入变量的数量下限（默认为 `5` ）                  | `int`             |
+| `isInsertCountAutoAdapted` | 是否根据当前类或方法的具体情况自动适配插入的方法或变量的数量           | `boolean`         |
 | `processingPackages`       | 需要混淆处理的包路径（若未设置，则默认所有路径）                 | `HashSet<String>` |
-| `isSkipJars`               | 是否跳过第三方 jar 的混淆增强（默认为 `true`）            | `boolean`      |
-| `obfuscationDict`          | 自定义的混淆代码字典文件，可自行配置插入的代码和离散程度（格式参照下方详细介绍） | `String`       |
-| `isSkipAbsClass`           | 是否跳过抽象类的混淆增强（默认为 `true`）                 | `boolean`      |
-| `methodObfuscateEnable`    | 是否对方法进行混淆 （默认为 `true`）                   | `boolean`      |
-| `maxCodeLineCount`         | 方法内允许插入的最大代码行数 （默认为 `6` ）                  | `int`          |
-| `generatedClassPkg`        | 生成方法内随机代码调用的目标类的包名（仅在开启方法内混淆时使用）         | `String`       |
-| `generatedClassName`       | 生成方法内随机代码调用的目标类的类名（仅在开启方法内混淆时使用）         | `String`       |
-| `generatedMethodCount`     | 生成方法内随机代码调用的目标类中方法数量（仅在开启方法内混淆时使用）       | `int`          |
+| `isSkipJars`               | 是否跳过第三方 jar 的混淆增强（默认为 `true`）            | `boolean`         |
+| `obfuscationDict`          | 自定义的混淆代码字典文件，可自行配置插入的代码和离散程度（格式参照下方详细介绍） | `String`          |
+| `isSkipAbsClass`           | 是否跳过抽象类的混淆增强（默认为 `true`）                 | `boolean`         |
+| `methodObfuscateEnable`    | 是否对方法进行混淆 （默认为 `true`）                   | `boolean`         |
+| `maxCodeLineCount`         | 方法内允许插入的最大代码行数 （默认为 `6` ）                | `int`             |
+| `generatedClassPkg`        | 生成方法内随机代码调用的目标类的包名（仅在开启方法内混淆时使用）         | `String`          |
+| `generatedClassName`       | 生成方法内随机代码调用的目标类的类名（仅在开启方法内混淆时使用）         | `String`          |
+| `generatedMethodCount`     | 生成方法内随机代码调用的目标类中方法数量（仅在开启方法内混淆时使用）       | `int`             |
+| `genClassCount`            | 生成随机调用类的数量（可显著降低方法内插入代码的重复率）             | `int`             |
 | `excludeRules`             | 混淆插件处理的排除规则（可理解为白名单，用于控制混淆范围）            | `HashSet<String>` |
 | `variantConstraints`       | 设置插件执行的范围(若不设置则默认所有buildType都会执行)        | `HashSet<String>` |
 
