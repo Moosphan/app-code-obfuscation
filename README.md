@@ -1,6 +1,12 @@
 # app-code-obfuscation
-Android plug-in code obfuscation tool, based on ASM, implants meaningless bytecode during compilation.
-> Android插入式代码混淆工具，基于ASM在编译期间植入无意义字节码，以提高逆向成本。
+| Chinese | [English](README_en.md) |
+| ------- |--------------|
+
+[![Maven Central](https://img.shields.io/maven-central/v/cn.dorck.android/code-guard-plugin?style=flat-square)](https://search.maven.org/artifact/cn.dorck.android/code-guard-plugin)  [![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/cn.dorck.code.guarder?style=flat-square)](https://plugins.gradle.org/plugin/cn.dorck.code.guarder)  [![License](https://img.shields.io/badge/license-apache2.0-blue?style=flat-square.svg)](https://opensource.org/licenses/Apache-2.0)
+
+Android插入式代码混淆工具，基于ASM在编译期间植入无意义字节码，以提高逆向成本。
+
+> *You can find the latest released plugin version on [Gradle Plugin Portal](https://plugins.gradle.org/plugin/cn.dorck.component.publisher).*
 
 ### 特性
 - 在Proguard优化class字节码之后执行，从而避免被混淆工具优化
@@ -18,11 +24,11 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 
 | 处理前                                                       | 处理后                                               |
 | ------------------------------------------------------------ | ---------------------------------------------------- |
-| <img src="./art/app_code_origin.png" alt="origin_preview" style="zoom:107%;" /> | ![obfuscated_preview](./art/app_code_obfuscated.png) |
+| <img src="./art/app_code_origin.png" alt="origin_preview" style="zoom:107%;" /> | ![obfuscated_preview](./art/code_obfuscated_beta.png) |
 
 
 ### 快速使用
-> 目前稳定版本尚未发布，临时版本为：`0.1.0-alpha`
+> 目前稳定版本尚未发布，临时版本为：`0.1.0-beta`
 #### 1. 引入插件
 首先在 `app/build.gradle.kts` 或 `xx_library_module/build.gradle.kts` 中引入混淆插件：
 
@@ -30,7 +36,7 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 plugins {
     id("com.android.application")
     // 引入增强版混淆插件
-    id("cn.dorck.code.guarder") version "0.1.0-alpha"
+    id("cn.dorck.code.guarder") version "0.1.0-beta"
 }
 ```
 #### 2. 使用插件
