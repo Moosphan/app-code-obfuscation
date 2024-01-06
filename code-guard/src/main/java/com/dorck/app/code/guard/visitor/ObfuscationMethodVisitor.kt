@@ -43,7 +43,13 @@ class ObfuscationMethodVisitor(
             val methodName = randomMethodCall.name
             val methodDesc = randomMethodCall.desc
             val ownerClz = randomMethodCall.className
-            pushDefaultConstToStack(methodDesc)
+            // Get params descriptors from method desc.
+            val paramTypes = Type.getArgumentTypes(methodDesc)
+            // Handle each param default value.
+            paramTypes.forEach { paramType ->
+                pushDefaultConstToStack(paramType.descriptor)
+            }
+//            pushDefaultConstToStack(methodDesc)
             // 插入混淆方法调用
             mv.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
@@ -88,8 +94,8 @@ class ObfuscationMethodVisitor(
      * For methods with parameters, default parameter values need to be pushed to the stack.
      */
     private fun pushDefaultConstToStack(descriptor: String) {
-        val paramDesc = descriptor.substringAfter('(').substringBefore(')')
-        when (paramDesc) {
+//        val paramDesc = descriptor.substringAfter('(').substringBefore(')')
+        when (descriptor) {
             "I" -> mv.visitLdcInsn(0)          // Default value for int
             "F" -> mv.visitLdcInsn(0.0f)       // Default value for float
             "D" -> mv.visitLdcInsn(0.0)        // Default value for double

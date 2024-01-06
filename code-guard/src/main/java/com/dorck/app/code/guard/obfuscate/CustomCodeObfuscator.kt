@@ -26,12 +26,13 @@ object CustomCodeObfuscator : AbsCodeObfuscator() {
     }
 
     override var mClassEntity: SimpleClassEntity? = null
+    override var mGenClassList: MutableList<SimpleClassEntity> = mutableListOf()
 
     override fun initialize() {
         // TODO: 解析json配置文件
     }
 
-    override fun nextFiled(): FieldEntity {
+    override fun nextField(): FieldEntity {
         val randomIndex = random.nextInt(mFieldsList.size)
         return mFieldsList[randomIndex]
     }

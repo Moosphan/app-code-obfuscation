@@ -1,9 +1,9 @@
 plugins {
     `java-gradle-plugin`
     `kotlin-dsl`
-//    id("cn.dorck.component.publisher") version "1.0.4"
-    signing
-    id("com.gradle.plugin-publish") version "1.0.0-rc-1"
+    id("cn.dorck.component.publisher") version "1.0.4"
+//    signing
+//    id("com.gradle.plugin-publish") version "1.0.0-rc-1"
 }
 
 // Load and configure secrets of publication.
@@ -37,22 +37,18 @@ if (localPropsFile.exists()) {
 group = PluginInfo.group
 version = PluginInfo.version
 
-/*publishOptions {
+publishOptions {
     group = PluginInfo.group
     version = PluginInfo.version
     artifactId = PluginInfo.artifactId
     description = PluginInfo.description
-    snapshotRepoUrl = PluginInfo.SNAPSHOT_URL
-    releaseRepoUrl = PluginInfo.RELEASE_URL
-    userName = project.ext["ossrh.username"] as String
-    password = project.ext["ossrh.password"] as String
-}*/
-
-pluginBundle {
-    website = "https://github.com/Moosphan/app-code-obfuscation"
-    vcsUrl = "https://github.com/Moosphan/app-code-obfuscation.git"
-    tags = listOf("code obfuscation", "proguard", "bytecode enhancement", "Apk obfuscate")
 }
+
+//pluginBundle {
+//    website = "https://github.com/Moosphan/app-code-obfuscation"
+//    vcsUrl = "https://github.com/Moosphan/app-code-obfuscation.git"
+//    tags = listOf("code obfuscation", "proguard", "bytecode enhancement", "Apk obfuscate")
+//}
 
 gradlePlugin {
     plugins {
@@ -78,7 +74,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.8.6")
 }
 
-afterEvaluate {
+/*afterEvaluate {
     publishing {
         publications {
             create<MavenPublication>("pluMaven") {
@@ -135,7 +131,7 @@ afterEvaluate {
             }
         }
     }
-}
+}*/
 
 object PluginInfo {
     const val id = "cn.dorck.code.guarder"
@@ -143,7 +139,7 @@ object PluginInfo {
     const val group = "cn.dorck"
     const val artifactId = "code-guard-plugin"
     const val implementationClass = "com.dorck.app.code.guard.CodeGuardPlugin"
-    const val version = "0.1.0-alpha"
+    const val version = "0.1.0-LOCAL"
     const val displayName = "CodeGuardPlugin"
     const val description = "A plugin for code obfuscation."
     const val url = "https://github.com/Moosphan/app-code-obfuscation"

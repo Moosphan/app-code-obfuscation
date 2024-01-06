@@ -3,6 +3,7 @@ package com.dorck.app.code.guard.utils
 import com.dorck.app.code.guard.obfuscate.ParameterEntity
 import com.dorck.app.code.guard.obfuscate.SimpleClassEntity
 import org.objectweb.asm.Opcodes
+import org.objectweb.asm.Type
 
 /**
  * Generate java format code from [SimpleClassEntity].
@@ -28,7 +29,7 @@ object CodeGenerator {
                 codeBuilder.append("static ")
             }
             codeBuilder.append("void ${method.name}(")
-            val paramList = parseMethodDesc(method.desc)
+            val paramList = parseMethodParams(method.desc)
             for (i in paramList.indices) {
                 val parameter = paramList[i]
                 codeBuilder.append("${parameter.type} ${parameter.name}")
@@ -47,6 +48,33 @@ object CodeGenerator {
         return codeBuilder.toString()
     }
 
+    private fun parseMethodParams(desc: String): List<ParameterEntity> {
+        val paramTypes = Type.getArgumentTypes(desc)
+        var index = 0
+        val parameters = mutableListOf<ParameterEntity>()
+        paramTypes.forEach { paramType ->
+            val name = "param${index++}" // Generate a default parameter name
+            parameters.add(ParameterEntity(parseType(paramType.descriptor), name))
+        }
+        return parameters
+    }
+
+    private fun parseType(paramDesc: String): String {
+        return when (paramDesc) {
+            "V" -> "void"
+            "Z" -> "boolean"
+            "B" -> "byte"
+            "S" -> "short"
+            "C" -> "char"
+            "I" -> "int"
+            "J" -> "long"
+            "F" -> "float"
+            "D" -> "double"
+            "Ljava/lang/String;" -> "java.lang.String"
+            else -> throw IllegalArgumentException("Unsupported type: $paramDesc")
+        }
+    }
+
     private fun parseMethodDesc(desc: String): List<ParameterEntity> {
         val parameters = mutableListOf<ParameterEntity>()
         val descArray = desc.toCharArray()
@@ -63,6 +91,7 @@ object CodeGenerator {
     }
 
     private fun parseType(descArray: CharArray, currentIndex: Int): Pair<String, Int> {
+        DLogger.error("parseType, desc: ${String(descArray)}")
         return when (descArray[currentIndex]) {
             'V' -> Pair("void", currentIndex + 1)
             'Z' -> Pair("boolean", currentIndex + 1)
@@ -75,7 +104,13 @@ object CodeGenerator {
             'D' -> Pair("double", currentIndex + 1)
             'L' -> {
                 val start = currentIndex + 1
-                val end = descArray.indexOf(';')
+                var end = descArray.indexOfFirst { it == ';' }
+                for (i in descArray.indices) {
+                    if (descArray[i] == ';' && i > start) {
+                        end = i
+                    }
+                }
+                DLogger.error("parseType, string >> [$start, $end], ${String(descArray, start, end - start).replace('/', '.')}")
                 if (end == -1) {
                     throw IllegalArgumentException("Missing ';' for object type descriptor")
                 }

@@ -117,7 +117,7 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
 
     private fun insertRandomField(obfuscator: IAppCodeObfuscator): FieldVisitor? {
         DLogger.info("insertRandomField >> start insert field, progress: [${mFieldInsertionCount+1}/$`mMaxFieldsSize`]")
-        val randomField = obfuscator.nextFiled()
+        val randomField = obfuscator.nextField()
         // Ignore existing fields with the same name.
         if (!isFieldExist(randomField.name, randomField.type)) {
             DLogger.error("Start to insert random field: $randomField")

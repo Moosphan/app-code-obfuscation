@@ -40,6 +40,8 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     var generatedClassName: String = ""
     // Number of random methods generated in java class.
     var generatedMethodCount: Int = 3
+    // Number of generated classes.
+    var genClassCount: Int = 3
     // Exclude rules which you don't want to obfuscate.
     var excludeRules: HashSet<String> = HashSet() // TODO 12/09 包含白名单职责
     // Specify a collection of variants for obfuscated execution.
@@ -65,6 +67,7 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
                 generatedClassPkg: $generatedClassPkg,
                 generatedClassName: $generatedClassName,
                 generatedMethodCount: $generatedMethodCount,
+                genClassCount: $genClassCount,
                 excludeRules: $excludeRules,
                 variantConstraints: $variantConstraints,
             }

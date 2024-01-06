@@ -3,7 +3,7 @@ package com.dorck.app.code.guard.obfuscate
 interface IAppCodeObfuscator {
     fun initialize()
 
-    fun nextFiled(): FieldEntity
+    fun nextField(): FieldEntity
 
     fun nextMethod(): MethodEntity
 
