@@ -57,13 +57,13 @@ class CodeGuardPlugin : Plugin<Project> {
                 logMessage("Found preBuild task: ${preBuildTask.name}")
                 val createTaskName = "gen${variant.name.capitalize()}JavaTempClassTask"
                 var existGenTask = project.tasks.findByName(createTaskName)
-                if (existGenTask == null) {
+//                if (existGenTask == null) {
                     existGenTask = project.tasks.create(createTaskName, GenRandomClassTask::class.java)
                     AppCodeGuardConfig.configJavaCodeGenMainDir(getGenClassBaseOutputDir(project))
                     val outputDir = createGenClassOutputMainDir()
                     // Configure java main output dir.
                     existGenTask.outputDir = outputDir
-                }
+//                }
                 preBuildTask.dependsOn(existGenTask)
                 // 编译完成后需要将混淆类从源码目录删除(在compile之后)
                 // Note: 需要确保 Transform 处理完后再删除

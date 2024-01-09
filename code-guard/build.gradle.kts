@@ -1,10 +1,10 @@
 plugins {
     `java-gradle-plugin`
     `kotlin-dsl`
-    signing
-    id("com.gradle.plugin-publish") version "1.0.0-rc-1"
+//    signing
+//    id("com.gradle.plugin-publish") version "1.0.0-rc-1"
     // Only used for local testing.
-//    id("cn.dorck.component.publisher") version "1.0.4"
+    id("cn.dorck.component.publisher") version "1.0.4"
 }
 
 // Load and configure secrets of publication.
@@ -45,11 +45,11 @@ version = PluginInfo.version
 //    description = PluginInfo.description
 //}
 
-pluginBundle {
-    website = "https://github.com/Moosphan/app-code-obfuscation"
-    vcsUrl = "https://github.com/Moosphan/app-code-obfuscation.git"
-    tags = listOf("code obfuscation", "proguard", "bytecode enhancement", "Apk obfuscate")
-}
+//pluginBundle {
+//    website = "https://github.com/Moosphan/app-code-obfuscation"
+//    vcsUrl = "https://github.com/Moosphan/app-code-obfuscation.git"
+//    tags = listOf("code obfuscation", "proguard", "bytecode enhancement", "Apk obfuscate")
+//}
 
 gradlePlugin {
     plugins {
@@ -73,9 +73,10 @@ dependencies {
     compileOnly("org.ow2.asm:asm:9.1")
     compileOnly("org.ow2.asm:asm-commons:9.1")
     implementation("com.google.code.gson:gson:2.8.6")
+    implementation("commons-io:commons-io:2.11.0")
 }
 
-afterEvaluate {
+/*afterEvaluate {
     publishing {
         publications {
             create<MavenPublication>("pluMaven") {
@@ -132,7 +133,7 @@ afterEvaluate {
             }
         }
     }
-}
+}*/
 
 object PluginInfo {
     const val id = "cn.dorck.code.guarder"
@@ -140,7 +141,7 @@ object PluginInfo {
     const val group = "cn.dorck"
     const val artifactId = "code-guard-plugin"
     const val implementationClass = "com.dorck.app.code.guard.CodeGuardPlugin"
-    const val version = "0.1.0-beta"
+    const val version = "0.1.0-LOCAL"
     const val displayName = "CodeGuardPlugin"
     const val description = "A plugin for code obfuscation."
     const val url = "https://github.com/Moosphan/app-code-obfuscation"

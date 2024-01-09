@@ -3,7 +3,6 @@ package com.dorck.app.obfuscate
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import com.dorck.app.obfuscate.a.b.e.TestCall
 
 class MainActivity : AppCompatActivity() {
     private var name: String = "sa"
@@ -15,6 +14,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun get(int: Int) {
-        TestCall.make(0)
+
     }
 }

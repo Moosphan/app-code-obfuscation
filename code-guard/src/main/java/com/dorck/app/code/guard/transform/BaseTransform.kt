@@ -11,7 +11,6 @@ import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.*
 import java.util.jar.JarEntry
@@ -77,6 +76,7 @@ abstract class BaseTransform : Transform() {
         val inputDir = dirInput.file
         val outputDir = outputProvider.getContentLocation(dirInput.name, dirInput.contentTypes, dirInput.scopes, Format.DIRECTORY)
         if (incremental) {
+            DLogger.error("collectAndHandleDirectories >> incremental process.")
             dirInput.changedFiles.forEach { (file, status) ->
                 val changedInputFilePath = file.absolutePath
                 val changedOutputFile = File(
@@ -89,6 +89,7 @@ abstract class BaseTransform : Transform() {
                 }
             }
         } else {
+            DLogger.error("collectAndHandleDirectories >> full process.")
             handleDirectoriesTransform(inputDir, outputDir)
         }
     }
@@ -100,50 +101,87 @@ abstract class BaseTransform : Transform() {
         if (!inputDir.isDirectory) {
             return
         }
-        val childrenFiles = inputDir.listFiles()
-        childrenFiles?.forEach {
-            if (it.isFile) {
-                val realOutputFile = File(it.absolutePath.replace(inputDir.absolutePath, outputDir.absolutePath))
-                if (!realOutputFile.exists()) {
-                    realOutputFile.parentFile.mkdirs()
-                }
-                realOutputFile.createNewFile()
-                transformClassFile(it, realOutputFile)
-            } else {
-                // 继续递归找到 class 文件
-                handleDirectoriesTransform(it, outputDir)
+//        val childrenFiles = inputDir.listFiles()
+//        childrenFiles?.forEach {
+//            if (it.isFile) {
+//                val realOutputFile = File(it.absolutePath.replace(inputDir.absolutePath, outputDir.absolutePath))
+//                if (!realOutputFile.exists()) {
+//                    realOutputFile.parentFile.mkdirs()
+//                }
+//                realOutputFile.createNewFile()
+//                transformClassFile(it, realOutputFile)
+//            } else {
+//                // 继续递归找到 class 文件
+//                handleDirectoriesTransform(it, outputDir)
+//            }
+//        }
+//        inputDir.listFiles()?.forEach { classFile ->
+//                if (classFile.isFile) {
+//                    DLogger.error("handleDirectoriesTransform >> isFile")
+//                    transformClassFile(classFile, outputDir)
+//                } else {
+//                    DLogger.error("handleDirectoriesTransform >> is dir")
+//                    // 继续递归找到 class 文件
+//                    handleDirectoriesTransform(classFile, outputDir)
+//                }
+//            }
+        inputDir.walkTopDown().filter { it.isFile }
+            .forEach { classFile ->
+                DLogger.error("handleDirectoriesTransform >> isFile")
+                transformClassFile(classFile, outputDir)
             }
-        }
+        //处理完输出给下一任务作为输入
+//        FileUtils.copyDirectory(inputDir, outputDir)
+        inputDir.copyRecursively(outputDir, true)
     }
 
     /**
      * 基于ASM执行具体的代码插桩操作
      */
     private fun transformClassFile(src: File, dest: File) {
-        if (src.isDirectory) {
-            DLogger.error("transformClassFile, src file is directory!")
-            return
-        }
-        val inputStream = FileInputStream(src)
-        val outputStream = FileOutputStream(dest)
+//        if (src.isDirectory) {
+//            DLogger.error("transformClassFile, src file is directory!")
+//            return
+//        }
+//        val inputStream = FileInputStream(src)
+//        val outputStream = FileOutputStream(dest)
+//        try {
+//            // 是否需要处理，如针对特定包名做修改，排除白名单中的类
+//            if (isNeedProcessClass(src.absolutePath)) {
+//                // 字节码插桩
+//                val classReader = ClassReader(inputStream)
+//                val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
+//                val classVisitor = createClassVisitor(Opcodes.ASM9, classWriter)
+//                classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)
+//                // 将修改的class文件写到output文件
+//                outputStream.write(classWriter.toByteArray())
+//                inputStream.close()
+//                outputStream.close()
+//            } else {
+//                outputStream.write(IOUtils.toByteArray(inputStream)!!)
+//            }
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//            inputStream.close()
+//            outputStream.close()
+//        }
+        DLogger.error("transformClassFile >>>>>>>>>")
+        val outputStream = FileOutputStream(src)
         try {
             // 是否需要处理，如针对特定包名做修改，排除白名单中的类
             if (isNeedProcessClass(src.absolutePath)) {
                 // 字节码插桩
-                val classReader = ClassReader(inputStream)
-                val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
+                val classReader = ClassReader(src.readBytes())
+                val classWriter = ClassWriter(classReader, ClassWriter.COMPUTE_MAXS)
                 val classVisitor = createClassVisitor(Opcodes.ASM9, classWriter)
                 classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)
                 // 将修改的class文件写到output文件
                 outputStream.write(classWriter.toByteArray())
-                inputStream.close()
                 outputStream.close()
-            } else {
-                outputStream.write(IOUtils.toByteArray(inputStream)!!)
             }
         } catch (e: Exception) {
+            DLogger.error("handleDirectoriesTransform, err: $e")
             e.printStackTrace()
-            inputStream.close()
             outputStream.close()
         }
     }
