@@ -3,7 +3,7 @@ import kotlin.collections.*
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("cn.dorck.code.guarder") /*version "0.1.0-beta"*/
+    id("cn.dorck.code.guarder") version "0.1.1-beta"
 }
 
 android {

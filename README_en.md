@@ -26,14 +26,14 @@ Here, take the [ `SimpleKtClass.kt` ](./app/src/main/java/com/dorck/app/obfuscat
 | <img src="./art/app_code_origin.png" alt="origin_preview" style="zoom:107%;" /> | ![obfuscated_preview](./art/code_obfuscated_beta.png) |
 
 ### Quick start
-> The stable version has not been released yet, and the temporary version is:  `0.1.0-beta`
+> The stable version has not been released yet, and the temporary version is:  `0.1.1-beta`
 #### 1. Import plugin
 First, import the obfuscation plugin in  `app/build.gradle.kts`  or  `xx_library_module/build.gradle.kts` :
 ```kotlin
 plugins {
     id("com.android.application")
     // Import enhanced obfuscation plugin
-    id("cn.dorck.code.guarder") version "0.1.0-beta"
+    id("cn.dorck.code.guarder") version "0.1.1-beta"
 }
 ```
 
