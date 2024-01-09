@@ -2,12 +2,16 @@ package com.dorck.app.code.guard.transform
 
 import com.android.build.api.transform.Format
 import com.android.build.api.transform.TransformInvocation
+import com.android.utils.FileUtils
 import com.dorck.app.code.guard.config.AppCodeGuardConfig
 import com.dorck.app.code.guard.extension.CodeGuardConfigExtension
 import com.dorck.app.code.guard.utils.DLogger
 import com.dorck.app.code.guard.visitor.ObfuscationClassVisitor
 import org.gradle.api.Project
+import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
+import org.objectweb.asm.ClassWriter
+import java.io.FileOutputStream
 
 class CodeGuardTransform(
     private val extension: CodeGuardConfigExtension,
@@ -37,6 +41,34 @@ class CodeGuardTransform(
         if (!isIncremental) {
             transformInvocation.outputProvider.deleteAll()
         }
+//        val inputs = transformInvocation.inputs
+//        inputs?.forEach {
+//            it.directoryInputs.forEach {
+//                val dest = transformInvocation.outputProvider?.getContentLocation(
+//                    it.name,
+//                    it.contentTypes,
+//                    it.scopes,
+//                    Format.DIRECTORY
+//                )
+//                if (it.file.isDirectory) {
+//                    FileUtils.getAllFiles(it.file).forEach { file ->
+//                        transformClassFile(file, dest!!)
+//                    }
+//                }
+//                FileUtils.copyDirectoryToDirectory(it.file, dest)
+//            }
+//
+//
+//            it.jarInputs.forEach {
+//                val dest = transformInvocation.outputProvider?.getContentLocation(
+//                    it.name,
+//                    it.contentTypes,
+//                    it.scopes,
+//                    Format.JAR
+//                )
+//                FileUtils.copyFile(it.file, dest)
+//            }
+//        }
 
         transformInvocation.inputs.forEach {
             DLogger.info("Transform jar input size: ${it.jarInputs.size}, dir input size: ${it.directoryInputs.size}")

@@ -128,7 +128,7 @@ object AppCodeGuardConfig {
         }
         // 2.是否在处理的包名清单中(前提processingPackages不为空)
         if (!isTrackInPackage(formattedPath)) {
-            DLogger.error("checkExcludes, not track in package: $processingPackages, curPath: $filePath")
+//            DLogger.error("checkExcludes, not track in package: $processingPackages, curPath: $filePath")
             return true
         }
         // 3.根据白名单规则过滤类文件

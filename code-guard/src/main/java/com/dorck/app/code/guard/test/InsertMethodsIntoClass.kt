@@ -24,7 +24,7 @@ object InsertMethodsIntoClass {
     fun insertRandomMethods(classBytes: ByteArray): ByteArray {
         val classReader = ClassReader(classBytes)
         val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
-        val classVisitor = CustomClassVisitor(Opcodes.ASM9, classWriter)
+        val classVisitor = CustomClassVisitor(Opcodes.ASM5, classWriter)
 
         classReader.accept(classVisitor, 0)
 

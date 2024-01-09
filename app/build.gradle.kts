@@ -3,7 +3,7 @@ import kotlin.collections.*
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("cn.dorck.code.guarder") version "0.1.0-beta"
+    id("cn.dorck.code.guarder") /*version "0.1.0-beta"*/
 }
 
 android {
@@ -21,6 +21,11 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
     }
 
     buildTypes {
@@ -41,6 +46,7 @@ codeGuard {
     processingPackages = hashSetOf(
         "com.dorck.app.obfuscate.simple"
     )
+    genClassCount = 5
 }
 
 dependencies {

@@ -15,6 +15,8 @@ import kotlin.math.max
 
 class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, api: Int, visitor: ClassVisitor): ClassVisitor(api, visitor) {
     private var isAbsClz = false
+    // 接口类需要规避处理
+    private var isInterface = false
     private var className = ""
     private val mClassFields: MutableList<FieldEntity> = mutableListOf()
     private val mClassMethods: MutableList<MethodEntity> = mutableListOf()
@@ -41,7 +43,7 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
         DLogger.error("visitField, mMaxFieldsSize: $mMaxFieldsSize")
         val obfuscator = CodeObfuscatorFactory.getCodeObfuscator(extension)
         // Insert at random index(始终保证插入变量数目少于配置的数量上限).
-        if (obfuscator.shouldInsertElement() && mFieldInsertionCount <= mMaxFieldsSize) {
+        if (!isInterface && obfuscator.shouldInsertElement() && mFieldInsertionCount <= mMaxFieldsSize) {
             updateOriginFields(access, name, descriptor)
             // 保证历史属性能被正常保留
             super.visitField(access, name, descriptor, signature, value)
@@ -57,12 +59,12 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
         DLogger.error("visitEnd, current insert field count: [$mFieldInsertionCount/$mMaxFieldsSize], method count: [$mMethodInsertionCount/$mMaxMethodsSize]")
         // 如果插入数量不足需要补齐
         val obfuscator = CodeObfuscatorFactory.getCodeObfuscator(extension)
-        if (mFieldInsertionCount <= mMaxFieldsSize) {
+        if (!isInterface && mFieldInsertionCount <= mMaxFieldsSize) {
             repeat(mMaxFieldsSize - mFieldInsertionCount) {
                 insertRandomField(obfuscator)
             }
         }
-        if (mMethodInsertionCount <= mMaxMethodsSize) {
+        if (!isInterface && mMethodInsertionCount <= mMaxMethodsSize) {
             repeat(mMaxMethodsSize - mMethodInsertionCount) {
                 insertRandomMethod(obfuscator)
             }
@@ -81,9 +83,11 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
     ) {
         super.visit(version, access, name, signature, superName, interfaces)
         className = name ?: ""
-        if ((access and Opcodes.ACC_ABSTRACT) > 0 || (access and Opcodes.ACC_INTERFACE) > 0) {
-            isAbsClz = true
-        }
+//        if ((access and Opcodes.ACC_ABSTRACT) > 0 || (access and Opcodes.ACC_INTERFACE) > 0) {
+//            isAbsClz = true
+//        }
+        isAbsClz = (access and Opcodes.ACC_ABSTRACT) != 0
+        isInterface = (access and Opcodes.ACC_INTERFACE) != 0
         DLogger.error("visit class [$className], isInsertCountAutoAdapt: ${extension.isInsertCountAutoAdapted}")
     }
 
@@ -94,8 +98,8 @@ class ObfuscationClassVisitor(private val extension: CodeGuardConfigExtension, a
         signature: String?,
         exceptions: Array<out String>?
     ): MethodVisitor? {
-        // 如果设置跳过抽象类或者构造函数，则直接返回
-        if ((isAbsClz && extension.isSkipAbsClass) || isConstructor(name!!, descriptor!!)) {
+        // 如果设置跳过抽象类、接口或者构造函数，则直接返回
+        if ((isAbsClz && extension.isSkipAbsClass) || isInterface || isConstructor(name!!, descriptor!!)) {
             updateOriginMethods(access, name!!, descriptor!!)
             return super.visitMethod(access, name, descriptor, signature, exceptions)
         }

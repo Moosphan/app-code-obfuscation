@@ -10,7 +10,7 @@ import org.objectweb.asm.Opcodes
 object RandomCodeObfuscator: AbsCodeObfuscator() {
     private const val CHARACTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     // The max chars length of filed or method name.
-    private const val FIELD_NAME_MAX_LEN = 1
+    private const val FIELD_NAME_MAX_LEN = 5 // 增加随机概率，防止变量名冲突
     private const val METHOD_NAME_MAX_LEN = 2
     private const val FIELD_NAME_PREFIX = "v"
     private const val METHOD_NAME_PREFIX = "m"
@@ -27,25 +27,6 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
 
     override fun initialize() {
         if (AppCodeGuardConfig.isEnableCodeObfuscateInMethod) {
-            /*var clzName = randomShortClassName()
-            if (AppCodeGuardConfig.genClassName.isNotEmpty()) {
-                clzName = AppCodeGuardConfig.genClassName
-            } else {
-                // Update to global config
-                AppCodeGuardConfig.configGenClassName(clzName)
-            }
-            var packageName = randomPackageName()
-            if (AppCodeGuardConfig.genClassPkgName.isNotEmpty()) {
-                packageName = AppCodeGuardConfig.genClassPkgName
-            } else {
-                // Update to global config
-                AppCodeGuardConfig.configGenClassPkgName(packageName)
-            }
-            // Note: Class name 格式需要为: 包名 + 类名
-            val fullClassName = convertToPathFormat("$packageName.$clzName")
-            mClassEntity = SimpleClassEntity(packageName, clzName,
-                generateMethodList(fullClassName, AppCodeGuardConfig.genClassMethodCount))*/
-
             // Reset data.
             AppCodeGuardConfig.resetGenData()
             // Generate code calling classes in batches.
@@ -95,11 +76,6 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
 
     override fun nextCodeCall(): MethodEntity? {
         // 从生成的类中随机获取一个方法调用
-       /* if (mClassEntity == null) {
-            return null
-        }
-        val methodCalls = mClassEntity?.methods ?: mutableListOf()
-        return methodCalls[random.nextInt(methodCalls.size)]*/
         if (mGenClassList.isEmpty()) {
             return null
         }
@@ -221,7 +197,6 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
         repeat(count) {
             // 注意这个类生成的方法必须是 public static 类型的
             val name = generateRandomName(maxLength = 3)
-//            val desc = generateRandomDescriptor()
             val desc = genMultiRandomDescriptor()
             // 方法去重处理，防止类编译出错
             if (isMethodAlreadyExist(name, desc, genMethodList)) {

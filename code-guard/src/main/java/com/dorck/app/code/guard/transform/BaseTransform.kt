@@ -1,17 +1,15 @@
 package com.dorck.app.code.guard.transform
 
-import com.android.build.api.transform.Transform
 import com.android.build.api.transform.*
-import com.android.build.api.transform.TransformInvocation
 import com.android.build.gradle.internal.pipeline.TransformManager
-import com.dorck.app.code.guard.utils.IOUtils
 import com.dorck.app.code.guard.utils.DLogger
+import com.dorck.app.code.guard.utils.IOUtils
+import org.apache.commons.io.FileUtils
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Opcodes
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.*
 import java.util.jar.JarEntry
@@ -97,54 +95,37 @@ abstract class BaseTransform : Transform() {
      * 递归预创建output文件树，然后寻找.class格式文件并执行代码插桩后复制到输出文件
      */
     private fun handleDirectoriesTransform(inputDir: File, outputDir: File) {
-        if (!inputDir.isDirectory) {
-            return
-        }
-        val childrenFiles = inputDir.listFiles()
-        childrenFiles?.forEach {
-            if (it.isFile) {
-                val realOutputFile = File(it.absolutePath.replace(inputDir.absolutePath, outputDir.absolutePath))
-                if (!realOutputFile.exists()) {
-                    realOutputFile.parentFile.mkdirs()
+        if (inputDir.isDirectory) {
+            inputDir.walkTopDown().filter { it.isFile }
+                .forEach { classFile ->
+                    transformClassFile(classFile, outputDir)
                 }
-                realOutputFile.createNewFile()
-                transformClassFile(it, realOutputFile)
-            } else {
-                // 继续递归找到 class 文件
-                handleDirectoriesTransform(it, outputDir)
-            }
         }
+        //处理完输出给下一任务作为输入
+        FileUtils.copyDirectory(inputDir, outputDir)
     }
 
     /**
      * 基于ASM执行具体的代码插桩操作
      */
     private fun transformClassFile(src: File, dest: File) {
-        if (src.isDirectory) {
-            DLogger.error("transformClassFile, src file is directory!")
-            return
-        }
-        val inputStream = FileInputStream(src)
-        val outputStream = FileOutputStream(dest)
+        // 改为直接修改input文件，因为需要保留包名，防止出现重复的类名而导致类被覆盖，最终APK缺少类文件
         try {
             // 是否需要处理，如针对特定包名做修改，排除白名单中的类
             if (isNeedProcessClass(src.absolutePath)) {
                 // 字节码插桩
-                val classReader = ClassReader(inputStream)
-                val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
-                val classVisitor = createClassVisitor(Opcodes.ASM9, classWriter)
+                val classReader = ClassReader(src.readBytes())
+                val classWriter = ClassWriter(classReader, ClassWriter.COMPUTE_MAXS)
+                val classVisitor = createClassVisitor(Opcodes.ASM5, classWriter)
                 classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)
                 // 将修改的class文件写到output文件
+                val outputStream = FileOutputStream(src)
                 outputStream.write(classWriter.toByteArray())
-                inputStream.close()
                 outputStream.close()
-            } else {
-                outputStream.write(IOUtils.toByteArray(inputStream)!!)
             }
         } catch (e: Exception) {
+            DLogger.error("transformClassFile, err: $e")
             e.printStackTrace()
-            inputStream.close()
-            outputStream.close()
         }
     }
 
@@ -184,7 +165,7 @@ abstract class BaseTransform : Transform() {
                             // 通过asm修改class文件并写入output
                             val classReader = ClassReader(entryIs)
                             val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
-                            val classVisitor = createClassVisitor(Opcodes.ASM9, classWriter)
+                            val classVisitor = createClassVisitor(Opcodes.ASM5, classWriter)
                             classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)
                             destJarFileOs.write(classWriter.toByteArray())
                         } else {
@@ -196,10 +177,6 @@ abstract class BaseTransform : Transform() {
                 }
             }
         }
-    }
-
-    private fun log(message: String) {
-        DLogger.info("[$TAG] $message")
     }
 
     companion object {

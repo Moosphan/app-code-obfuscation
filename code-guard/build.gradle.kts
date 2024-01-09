@@ -64,14 +64,21 @@ gradlePlugin {
     }
 }
 
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
 dependencies {
     // Use gradle api
     implementation(gradleApi())
-    compileOnly("com.android.tools.build:gradle:7.2.1")
 //    compileOnly(kotlin("stdlib"))
     compileOnly("org.jetbrains.kotlin:kotlin-stdlib:1.5.21")
-    compileOnly("org.ow2.asm:asm:9.1")
-    compileOnly("org.ow2.asm:asm-commons:9.1")
+    implementation( "commons-io:commons-io:2.11.0")
+    compileOnly("org.ow2.asm:asm:7.0")
+    compileOnly("org.ow2.asm:asm-commons:7.0")
+    compileOnly("com.android.tools.build:gradle:7.2.1")
+    implementation("com.android.tools:common:26.6.3")
     implementation("com.google.code.gson:gson:2.8.6")
 }
 
