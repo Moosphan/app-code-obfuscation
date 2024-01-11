@@ -147,7 +147,7 @@ object PluginInfo {
     const val group = "cn.dorck"
     const val artifactId = "code-guard-plugin"
     const val implementationClass = "com.dorck.app.code.guard.CodeGuardPlugin"
-    const val version = "0.1.1-beta"
+    const val version = "0.1.2-beta"
     const val displayName = "CodeGuardPlugin"
     const val description = "A plugin for code obfuscation."
     const val url = "https://github.com/Moosphan/app-code-obfuscation"
