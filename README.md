@@ -9,7 +9,6 @@ Android插入式代码混淆工具，基于ASM在编译期间植入无意义字�
 > *You can find the latest released plugin version on [Gradle Plugin Portal](https://plugins.gradle.org/plugin/cn.dorck.component.publisher).*
 
 ### 特性
-- 在Proguard优化class字节码之后执行，从而避免被混淆工具优化
 - 支持插入类的成员变量、静态变量、方法及方法体内的代码段等
 - 支持自定义随机代码字典，增强定制性
 - 支持插入作用域控制（类级别、包级别和所有类）
@@ -67,6 +66,7 @@ codeGuard {
 - [x] 支持针对 `Library module` 的混淆操作
 - [x] 支持针对多个随机类的方法调用
 - [x] 针对随机方法调用提供多参数支持
+- [x] 增加对随机方法调用参数默认值的随机化处理
 - [ ] 多线程并行执行，优化混淆速度
 - [ ] APK体积和编译时常影响分析
 - [ ] 自定义混淆字典功能
@@ -92,6 +92,12 @@ codeGuard {
 | `genClassCount`            | 生成随机调用类的数量（可显著降低方法内插入代码的重复率）             | `int`             |
 | `excludeRules`             | 混淆插件处理的排除规则（可理解为白名单，用于控制混淆范围）            | `HashSet<String>` |
 | `variantConstraints`       | 设置插件执行的范围(若不设置则默认所有buildType都会执行)        | `HashSet<String>` |
+
+### Todo & Bugfix
+- [X] 偶现打开App后闪退，提示找不到生成的调用类（由于构建cache导致Task未执行）
+- [ ] 随机调用类生成任务执行前支持使用上次执行产物或清空上次的产物
+- [ ] 支持手动执行 Task 来清除生成的随机调用类
+- [ ] 支持自动清除随机调用类(监听编译失败的时机)
 
 ### 维护计划
 关于近期开发计划请参考 [目前进展专区](https://github.com/Moosphan/app-code-obfuscation?tab=readme-ov-file#%E5%BD%93%E5%89%8D%E8%BF%9B%E5%B1%95) 。目前笔者会在感兴趣的领域从事一些开源的项目，如果你对本项目有什么好的建议或者问题，欢迎移步 [Issue](https://github.com/Moosphan/app-code-obfuscation/issues) 说出的你的想法和问题，这将有助于该项目更加持续稳定的面向更多开发者使用。 

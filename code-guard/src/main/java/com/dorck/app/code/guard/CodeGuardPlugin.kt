@@ -9,8 +9,13 @@ import com.dorck.app.code.guard.utils.IOUtils
 import com.dorck.app.code.guard.utils.DLogger
 import com.dorck.app.code.guard.utils.android
 import com.dorck.app.code.guard.utils.handleEachVariant
+import org.gradle.BuildAdapter
+import org.gradle.BuildListener
+import org.gradle.BuildResult
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.initialization.Settings
+import org.gradle.api.invocation.Gradle
 import java.io.File
 
 /**
@@ -30,6 +35,7 @@ class CodeGuardPlugin : Plugin<Project> {
         // Note: The plugin extension only initialized after `project.afterEvaluate` has been called, so we could not check configs here.
         // Recommended to use project properties.
         project.afterEvaluate {
+            DLogger.debug = extension.logDebug
             // Initialize global configs after extension successfully created.
             AppCodeGuardConfig.configureFromExtension(extension)
             // Default code generation strategy.
@@ -52,17 +58,27 @@ class CodeGuardPlugin : Plugin<Project> {
                     return@handleEachVariant
                 }
                 DLogger.info("Pre check finished, keep processing...")
+                if (!extension.methodObfuscateEnable) {
+                    DLogger.error("Method obfuscate not enable, skip gen classes.")
+                    return@handleEachVariant
+                }
                 val preBuildTask = variant.preBuildProvider.get()
                 // val preBuildTask = project.tasks.getByName("preBuild")
                 logMessage("Found preBuild task: ${preBuildTask.name}")
                 val createTaskName = "gen${variant.name.capitalize()}JavaTempClassTask"
-                var existGenTask = project.tasks.findByName(createTaskName)
+                var existGenTask = project.tasks.findByName(createTaskName) as GenRandomClassTask?
                 if (existGenTask == null) {
-                    existGenTask = project.tasks.create(createTaskName, GenRandomClassTask::class.java)
+                    logMessage("Start exec gen task from first creating..")
+                    existGenTask = project.tasks.create(createTaskName, GenRandomClassTask::class.java) {
+                        outputs.upToDateWhen { false }
+                    }
                     AppCodeGuardConfig.configJavaCodeGenMainDir(getGenClassBaseOutputDir(project))
                     val outputDir = createGenClassOutputMainDir()
                     // Configure java main output dir.
                     existGenTask.outputDir = outputDir
+                } else {
+                    logMessage("Start exec gen task from exist cache..")
+                    existGenTask.generateClass()
                 }
                 preBuildTask.dependsOn(existGenTask)
                 // 编译完成后需要将混淆类从源码目录删除(在compile之后)
@@ -70,15 +86,38 @@ class CodeGuardPlugin : Plugin<Project> {
                 // val packageTask = project.tasks.getByName("package${variant.name.capitalize()}")
                 val transformTask = project.tasks.getByName("transformClassesWith${CodeGuardTransform.TRANSFORM_NAME}For${variant.name.capitalize()}")
                 transformTask.doLast {
-//                    val isPackageExist = AppCodeGuardConfig.isPkgExist ?: false
-//                    logMessage("Start delete generated class, pkg exist: $isPackageExist, genPkgName: ${AppCodeGuardConfig.genClassPkgName}")
-//                    deleteGenClass(isPackageExist)
                     batchDeleteGenClass()
                 }
             }
 
         }
         project.android().registerTransform(codeGuardTransform)
+    }
+
+    private fun clearGenArtifacts(project: Project) {
+        // TODO 编译失败时删除生成的产物
+        project.gradle.addBuildListener(object : BuildListener {
+            override fun settingsEvaluated(settings: Settings) {
+            }
+
+            override fun projectsLoaded(gradle: Gradle) {
+            }
+
+            override fun projectsEvaluated(gradle: Gradle) {
+            }
+
+            override fun buildFinished(result: BuildResult) {
+                if (result.failure != null) {
+                    //
+                }
+            }
+
+        })
+    }
+
+    // TODO register clear task to delete gen classes
+    private fun createDeleteTask() {
+
     }
 
     private fun createGenClassOutputMainDir(): File {
@@ -89,25 +128,6 @@ class CodeGuardPlugin : Plugin<Project> {
         }
         return dir
     }
-
-    /*private fun deleteGenClass(isPkgExist: Boolean) {
-        // Note: 如果包名之前不存在，需要将创建的包目录也一并删除(获取子包名的第一个目录)
-        if (isPkgExist) {
-            val classPath = AppCodeGuardConfig.javaCodeGenPath
-            val genClassFile = File(classPath)
-            if (genClassFile.exists()) {
-                genClassFile.delete()
-            }
-            DLogger.error("deleteGenClass, path: $classPath")
-        } else {
-            val deleteDir = getDeleteDir()
-            DLogger.error("deleteGenClass, dir: $deleteDir")
-            val genClassDir = File(deleteDir)
-            if (genClassDir.exists()) {
-                IOUtils.deleteDirectory(genClassDir)
-            }
-        }
-    }*/
 
     private fun batchDeleteGenClass() {
         // Note: 如果包名之前不存在，需要将创建的包目录也一并删除(获取子包名的第一个目录)

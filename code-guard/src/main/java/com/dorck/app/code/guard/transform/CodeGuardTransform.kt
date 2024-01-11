@@ -23,7 +23,7 @@ class CodeGuardTransform(
     override fun isIncremental(): Boolean = extension.supportIncremental
 
     override fun onTransformBefore(transformInvocation: TransformInvocation) {
-        DLogger.debug = extension.logDebug
+//        DLogger.debug = extension.logDebug
         DLogger.info("onTransformBefore, extension: $extension")
         AppCodeGuardConfig.readConfigs()
     }

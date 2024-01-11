@@ -4,6 +4,7 @@ import com.dorck.app.code.guard.obfuscate.IAppCodeObfuscator
 import com.dorck.app.code.guard.obfuscate.MethodEntity
 import com.dorck.app.code.guard.obfuscate.RandomCodeObfuscator
 import com.dorck.app.code.guard.utils.DLogger
+import com.dorck.app.code.guard.utils.RandomTool
 import org.objectweb.asm.*;
 
 class ObfuscationMethodVisitor(
@@ -85,14 +86,14 @@ class ObfuscationMethodVisitor(
      */
     private fun pushDefaultConstToStack(descriptor: String) {
         when (descriptor) {
-            "I" -> mv.visitLdcInsn(0)          // Default value for int
-            "F" -> mv.visitLdcInsn(0.0f)       // Default value for float
-            "D" -> mv.visitLdcInsn(0.0)        // Default value for double
-            "Z" -> mv.visitLdcInsn(false)      // Default value for boolean
-            "C" -> mv.visitLdcInsn('\u0000')   // Default value for char
-            "B" -> mv.visitLdcInsn(0.toByte())       // Default value for byte
-            "S" -> mv.visitLdcInsn(0.toShort())      // Default value for short
-            "J" -> mv.visitLdcInsn(0L)         // Default value for long
+            "I" -> mv.visitLdcInsn(RandomTool.randomNumber())               // Default value for int
+            "F" -> mv.visitLdcInsn(RandomTool.randomNumber().toFloat())     // Default value for float
+            "D" -> mv.visitLdcInsn(RandomTool.randomNumber().toDouble())    // Default value for double
+            "Z" -> mv.visitLdcInsn(RandomTool.randomBool())                 // Default value for boolean
+            "C" -> mv.visitLdcInsn(RandomTool.randomChar())                 // Default value for char
+            "B" -> mv.visitLdcInsn(RandomTool.randomByte())                 // Default value for byte
+            "S" -> mv.visitLdcInsn(RandomTool.randomNumber().toShort())     // Default value for short
+            "J" -> mv.visitLdcInsn(RandomTool.randomNumber().toLong())      // Default value for long
             "Ljava/lang/String;" -> mv.visitLdcInsn(RandomCodeObfuscator.generateRandomName(maxLength = 2)) // Default value for String
             "" -> { // No params
                 // do nothing

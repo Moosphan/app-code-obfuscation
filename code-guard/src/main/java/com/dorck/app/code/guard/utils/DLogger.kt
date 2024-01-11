@@ -12,7 +12,9 @@ internal object DLogger {
      */
     fun error(errorMessage: String) {
         try {
-            println("${LogUI.ERROR.value}[$TAG]:$errorMessage${LogUI.END.value}")
+            if (debug) {
+                println("${LogUI.ERROR.value}[$TAG]:$errorMessage${LogUI.END.value}")
+            }
         } catch (ex: Exception) {
             ex.printStackTrace()
         }

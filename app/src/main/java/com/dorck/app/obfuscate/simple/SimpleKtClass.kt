@@ -2,6 +2,7 @@ package com.dorck.app.obfuscate.simple
 
 import android.util.Log
 
+@SimpleTestAnnotation
 class SimpleKtClass {
 
     fun testMethod() {
