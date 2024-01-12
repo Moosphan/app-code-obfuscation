@@ -17,7 +17,7 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 - Support function adaptation for AGP 8.0 and below.
 - Support the sinking of the basic library of generic ASM plugins to reduce the cost of subsequent plugin development.
 ### Effect preview
-> *Updated on 2023/12/13*
+> *Updated on `2023/01/06`*
 
 Here, take the [ `SimpleKtClass.kt` ](./app/src/main/java/com/dorck/app/obfuscate/simple/SimpleKtClass.kt) file in the sample as an example, and compare the effects before and after processing by the plugin in this project:
 

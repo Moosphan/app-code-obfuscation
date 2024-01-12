@@ -1,6 +1,6 @@
 # app-code-obfuscation
-| Chinese | [English](README_en.md) |
-| ------- |--------------|
+| 中文  | [English](README_en.md) |
+|-----|--------------|
 
 [![Maven Central](https://img.shields.io/maven-central/v/cn.dorck.android/code-guard-plugin?style=flat-square)](https://search.maven.org/artifact/cn.dorck.android/code-guard-plugin)  [![Gradle Plugin Portal](https://img.shields.io/gradle-plugin-portal/v/cn.dorck.code.guarder?style=flat-square)](https://plugins.gradle.org/plugin/cn.dorck.code.guarder)  [![License](https://img.shields.io/badge/license-apache2.0-blue?style=flat-square.svg)](https://opensource.org/licenses/Apache-2.0)
 
@@ -17,7 +17,7 @@ Android插入式代码混淆工具，基于ASM在编译期间植入无意义字�
 - 支持通用ASM插件的基础库下沉，降低后续插件开发成本
 
 ### 效果预览
-> *更新于 2023/12/13*
+> *更新于 2023/01/06*
 
 此处以 sample 中的 [`SimpleKtClass.kt`](./app/src/main/java/com/dorck/app/obfuscate/simple/SimpleKtClass.kt) 文件为例，对比一下通过本项目插件处理前后的效果：
 
