@@ -1,6 +1,6 @@
 plugins {
     id("com.android.library")
-    id("cn.dorck.code.guarder") version "0.1.3-beta"
+    id("cn.dorck.code.guarder") version "0.1.4-beta"
 }
 
 android {

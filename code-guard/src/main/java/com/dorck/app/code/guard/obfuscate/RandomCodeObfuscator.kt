@@ -2,6 +2,7 @@ package com.dorck.app.code.guard.obfuscate
 
 import com.dorck.app.code.guard.config.AppCodeGuardConfig
 import com.dorck.app.code.guard.utils.DLogger
+import com.dorck.app.code.guard.utils.RandomTool
 import org.objectweb.asm.Opcodes
 
 /**
@@ -67,7 +68,10 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
     }
 
     override fun nextField(): FieldEntity {
-        val name = generateRandomName(maxLength = FIELD_NAME_MAX_LEN)
+        var name = generateRandomName(maxLength = FIELD_NAME_MAX_LEN)
+        if (RandomTool.isHitJavaKeyWords(name)) {
+            name = generateRandomName(maxLength = 8)
+        }
         val accessType = generateRandomAccess()
         val type = generateRandomType()
         return FieldEntity(name, accessType, type)
@@ -201,7 +205,10 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
         val genMethodList = mutableListOf<MethodEntity>()
         repeat(count) {
             // 注意这个类生成的方法必须是 public static 类型的
-            val name = generateRandomName(maxLength = 3)
+            var name = generateRandomName(maxLength = 3)
+            if (RandomTool.isHitJavaKeyWords(name)) {
+                name = generateRandomName(maxLength = 6)
+            }
             val desc = genMultiRandomDescriptor()
             // 方法去重处理，防止类编译出错
             if (isMethodAlreadyExist(name, desc, genMethodList)) {
