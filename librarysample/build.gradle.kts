@@ -1,6 +1,6 @@
 plugins {
     id("com.android.library")
-//    id("cn.dorck.code.guarder") version "0.1.0-beta"
+    id("cn.dorck.code.guarder") version "0.1.3-beta"
 }
 
 android {
@@ -29,13 +29,13 @@ android {
     }
 }
 
-/*codeGuard {
+codeGuard {
     enable = true
     variantConstraints = hashSetOf("debug")
     processingPackages = hashSetOf(
         "com.dorck.code.sample.library"
     )
-}*/
+}
 
 dependencies {
 

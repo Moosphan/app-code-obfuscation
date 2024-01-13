@@ -27,7 +27,7 @@ Android插入式代码混淆工具，基于ASM在编译期间植入无意义字�
 
 
 ### 快速使用
-> 目前稳定版本尚未发布，临时版本为：`0.1.2-beta`
+> 目前稳定版本尚未发布，临时版本为：`0.1.3-beta`
 #### 1. 引入插件
 首先在 `app/build.gradle.kts` 或 `xx_library_module/build.gradle.kts` 中引入混淆插件：
 
@@ -35,7 +35,7 @@ Android插入式代码混淆工具，基于ASM在编译期间植入无意义字�
 plugins {
     id("com.android.application")
     // 引入增强版混淆插件
-    id("cn.dorck.code.guarder") version "0.1.2-beta"
+    id("cn.dorck.code.guarder") version "0.1.3-beta"
 }
 ```
 #### 2. 使用插件
@@ -95,9 +95,9 @@ codeGuard {
 
 ### Todo & Bugfix
 - [X] 偶现打开App后闪退，提示找不到生成的调用类（由于构建cache导致Task未执行）
-- [ ] 随机调用类生成任务执行前支持使用上次执行产物或清空上次的产物
-- [ ] 支持手动执行 Task 来清除生成的随机调用类
-- [ ] 支持自动清除随机调用类(监听编译失败的时机)
+- [x] 随机调用类生成任务执行前支持使用上次执行产物或清空上次的产物
+- [x] 支持手动执行 Task 来清除生成的随机调用类
+- [x] 支持自动清除随机调用类(监听编译失败的时机)
 
 ### 维护计划
 关于近期开发计划请参考 [目前进展专区](https://github.com/Moosphan/app-code-obfuscation?tab=readme-ov-file#%E5%BD%93%E5%89%8D%E8%BF%9B%E5%B1%95) 。目前笔者会在感兴趣的领域从事一些开源的项目，如果你对本项目有什么好的建议或者问题，欢迎移步 [Issue](https://github.com/Moosphan/app-code-obfuscation/issues) 说出的你的想法和问题，这将有助于该项目更加持续稳定的面向更多开发者使用。 

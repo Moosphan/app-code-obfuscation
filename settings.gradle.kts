@@ -10,7 +10,7 @@ pluginManagement {
     /*resolutionStrategy {
         eachPlugin {
             if (requested.id.id == "cn.dorck.code.guarder") {
-                useModule("cn.dorck:code-guard-plugin:0.1.0-LOCAL")
+                useModule("cn.dorck:code-guard:0.1.1-LOCAL")
 //                useModule("cn.dorck.android:code-guard-plugin:0.0.1-SNAPSHOT")
             }
         }

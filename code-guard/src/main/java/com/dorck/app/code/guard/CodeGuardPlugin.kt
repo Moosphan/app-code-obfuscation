@@ -5,11 +5,9 @@ import com.dorck.app.code.guard.extension.CodeGuardConfigExtension
 import com.dorck.app.code.guard.obfuscate.CodeObfuscatorFactory
 import com.dorck.app.code.guard.task.GenRandomClassTask
 import com.dorck.app.code.guard.transform.CodeGuardTransform
-import com.dorck.app.code.guard.utils.IOUtils
 import com.dorck.app.code.guard.utils.DLogger
 import com.dorck.app.code.guard.utils.android
 import com.dorck.app.code.guard.utils.handleEachVariant
-import org.gradle.BuildAdapter
 import org.gradle.BuildListener
 import org.gradle.BuildResult
 import org.gradle.api.Plugin
@@ -32,6 +30,7 @@ class CodeGuardPlugin : Plugin<Project> {
         val curBuildVariant = extractBuildVariant(project)
         DLogger.error("get current build variant: $curBuildVariant")
         AppCodeGuardConfig.configCurrentBuildVariant(curBuildVariant)
+        clearGenArtifactsWhenFailed(project)
         // Note: The plugin extension only initialized after `project.afterEvaluate` has been called, so we could not check configs here.
         // Recommended to use project properties.
         project.afterEvaluate {
@@ -43,6 +42,8 @@ class CodeGuardPlugin : Plugin<Project> {
                 project.logger.info("CodeGuardPlugin is not enabled or never use default strategy.")
                 return@afterEvaluate
             }
+            // Register task for deleting generated classes.
+            registerClearGenTask(project)
             // 基于preBuild任务时机来插入源码到指定`src/main/java`下，便于混淆代码参与到compile阶段
             val variants = HashSet<String>()
             project.handleEachVariant { variant ->
@@ -86,7 +87,7 @@ class CodeGuardPlugin : Plugin<Project> {
                 // val packageTask = project.tasks.getByName("package${variant.name.capitalize()}")
                 val transformTask = project.tasks.getByName("transformClassesWith${CodeGuardTransform.TRANSFORM_NAME}For${variant.name.capitalize()}")
                 transformTask.doLast {
-                    batchDeleteGenClass()
+                    AppCodeGuardConfig.batchDeleteGenClass()
                 }
             }
 
@@ -94,8 +95,7 @@ class CodeGuardPlugin : Plugin<Project> {
         project.android().registerTransform(codeGuardTransform)
     }
 
-    private fun clearGenArtifacts(project: Project) {
-        // TODO 编译失败时删除生成的产物
+    private fun clearGenArtifactsWhenFailed(project: Project) {
         project.gradle.addBuildListener(object : BuildListener {
             override fun settingsEvaluated(settings: Settings) {
             }
@@ -107,17 +107,25 @@ class CodeGuardPlugin : Plugin<Project> {
             }
 
             override fun buildFinished(result: BuildResult) {
-                if (result.failure != null) {
-                    //
+                if (result.failure != null && AppCodeGuardConfig.hasGenClassesInLocal() && !AppCodeGuardConfig.isClearProcessing) {
+                    DLogger.error("buildFinished, need to clear gen files.")
+                    AppCodeGuardConfig.batchDeleteGenClass()
                 }
             }
 
         })
     }
 
-    // TODO register clear task to delete gen classes
-    private fun createDeleteTask() {
-
+    private fun registerClearGenTask(project: Project) {
+        DLogger.error("registerClearGenTask...")
+        project.tasks.register("clearGenClasses") {
+            group = "codeGuarder"
+            if (AppCodeGuardConfig.hasGenClassesInLocal()) {
+                AppCodeGuardConfig.batchDeleteGenClass()
+            } else {
+                DLogger.error("Has no gen classes in local: ${AppCodeGuardConfig.javaGenClassPaths}")
+            }
+        }
     }
 
     private fun createGenClassOutputMainDir(): File {
@@ -127,44 +135,6 @@ class CodeGuardPlugin : Plugin<Project> {
             dir.mkdirs()
         }
         return dir
-    }
-
-    private fun batchDeleteGenClass() {
-        // Note: 如果包名之前不存在，需要将创建的包目录也一并删除(获取子包名的第一个目录)
-        val genClassPaths = AppCodeGuardConfig.javaGenClassPaths
-        DLogger.info("batchDeleteGenClass, gen classes: $genClassPaths")
-        genClassPaths.forEach {
-            val key = extractPackageAndClassName(it.classPath)
-            val pgkExist = AppCodeGuardConfig.packageExistStates[key] ?: false
-            DLogger.error("batchDeleteGenClass, key => $key is exist: $pgkExist")
-            deleteGenClass(pgkExist, it)
-        }
-    }
-
-    private fun deleteGenClass(isPkgExist: Boolean, classBean: AppCodeGuardConfig.GenClassData) {
-        // Note: 如果包名之前不存在，需要将创建的包目录也一并删除(获取子包名的第一个目录)
-        if (isPkgExist) {
-            val genClassFile = File(classBean.classPath)
-            if (genClassFile.exists()) {
-                genClassFile.delete()
-            }
-            DLogger.error("deleteGenClass, path: ${classBean.classPath}")
-        } else {
-            val deleteDir = getDeleteDir(classBean.pkgName)
-            val genClassDir = File(deleteDir)
-            if (genClassDir.exists()) {
-                IOUtils.deleteDirectory(genClassDir)
-            }
-            DLogger.error("deleteGenClass dir succeed: $deleteDir")
-        }
-    }
-
-    private fun getDeleteDir(classPkgName: String): String {
-        val mainDir = AppCodeGuardConfig.javaCodeGenMainDir
-        val applicationId = AppCodeGuardConfig.applicationId
-        val temp = classPkgName.replace(applicationId, "")
-        val baseDir = applicationId + "." + temp.split(".")[1]
-        return mainDir + baseDir.replace(".", "/") + "/"
     }
 
     private fun extractBuildVariant(project: Project): String {
@@ -192,26 +162,6 @@ class CodeGuardPlugin : Plugin<Project> {
 
     private fun logMessage(message: String) {
         DLogger.error("[CodeGuardPlugin] >>> $message")
-    }
-
-    private fun extractPackageAndClassName(filePath: String): String? {
-        val file = File(filePath)
-
-        if (!file.exists() || !file.isFile) {
-            return null
-        }
-
-        val srcMainJava = "src${File.separator}main${File.separator}java"
-        val srcMainJavaIndex = filePath.indexOf(srcMainJava)
-
-        if (srcMainJavaIndex == -1) {
-            return null
-        }
-
-        val packagePath =
-            filePath.substring(srcMainJavaIndex + srcMainJava.length + 1, filePath.length - 5)
-
-        return packagePath.replace(File.separator, ".")
     }
 
 

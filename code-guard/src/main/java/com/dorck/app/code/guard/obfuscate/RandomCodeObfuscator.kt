@@ -28,7 +28,7 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
     override fun initialize() {
         if (AppCodeGuardConfig.isEnableCodeObfuscateInMethod) {
             // Reset data.
-            AppCodeGuardConfig.resetGenData()
+            resetData()
             // Generate code calling classes in batches.
             val genClassCount = AppCodeGuardConfig.genClassCount
             if (genClassCount > 0) {
@@ -59,6 +59,11 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
                 DLogger.error("initialize, gen pkg paths: ${AppCodeGuardConfig.genPackagePaths}")
             }
         }
+    }
+
+    private fun resetData() {
+        AppCodeGuardConfig.resetGenData()
+        mGenClassList.clear()
     }
 
     override fun nextField(): FieldEntity {

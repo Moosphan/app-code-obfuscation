@@ -4,6 +4,7 @@ import com.dorck.app.code.guard.extension.CodeGuardConfigExtension
 import com.dorck.app.code.guard.obfuscate.CodeObfuscatorFactory
 import com.dorck.app.code.guard.obfuscate.RandomCodeObfuscator
 import com.dorck.app.code.guard.utils.DLogger
+import com.dorck.app.code.guard.utils.IOUtils
 import org.gradle.kotlin.dsl.provideDelegate
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -20,12 +21,14 @@ object AppCodeGuardConfig {
     const val DEFAULT_MIN_FIELD_COUNT = 5
     const val DEFAULT_MIN_METHOD_COUNT = 2
 
+    @Volatile
+    var isClearProcessing: Boolean = false
+
     // 默认的排除规则，需要规避掉系统使用的特殊class
     val DEFAULT_EXCLUDE_RULES = listOf("(R\\.class|BuildConfig\\.class)")
 
     private var mMap: ConcurrentHashMap<String, Any> = ConcurrentHashMap()
-    val javaCodeGenPath: String by mMap
-    val javaGenClassPaths: HashSet<GenClassData> by mMap    // 生成的类文件路径
+    val javaGenClassPaths: HashSet<GenClassData> = HashSet()// 生成的类文件路径
     val javaCodeGenMainDir: String by mMap                  // src/main/java目录
     val applicationId: String by mMap                       // Module所在的applicationId或namespace
 
@@ -38,14 +41,11 @@ object AppCodeGuardConfig {
 
     // Class generation configs (生成供目标混淆函数内生成代码调用的类).
     val genClassCount: Int by mMap                          // 用于指定生成代码调用的目标类的数量 (可一定程度降低相似度、提高理解难度)
-    // TODO: 单class情况待废弃
-    val genClassName: String by mMap
     val genClassPkgName: String by mMap
-    val genClassMethodCount: Int by mMap
 
-    var isPkgExist: Boolean? = null                     // 生成类之前是否已存在该包名路径(用于防止误删项目源码)
     var packageExistStates: HashMap<String, Boolean?> = hashMapOf()
-    var genPackagePaths: HashSet<String> = hashSetOf()  // 生成类的包路径
+    var genPackagePaths: HashSet<String> = hashSetOf()      // 生成类的包路径
+
 
     fun configureFromExtension(extension: CodeGuardConfigExtension) {
         mMap["genClassName"] = extension.generatedClassName
@@ -58,7 +58,6 @@ object AppCodeGuardConfig {
         mMap["excludeRulesList"] = extension.excludeRules.also {
             it.addAll(DEFAULT_EXCLUDE_RULES)
         }
-        mMap["javaGenClassPaths"] = HashSet<String>()
         readConfigs()
     }
 
@@ -66,28 +65,8 @@ object AppCodeGuardConfig {
         mMap["javaCodeGenMainDir"] = dir
     }
 
-    fun configJavaCodeGenPath(path: String) {
-        mMap["javaCodeGenPath"] = path
-    }
-
     fun configApplicationId(appId: String) {
         mMap["applicationId"] = appId
-    }
-
-    fun configGenClassName(className: String) {
-        mMap["genClassName"] = className
-    }
-
-    fun configGenClassPkgName(pkg: String) {
-        mMap["genClassPkgName"] = pkg
-    }
-
-    fun configGenClassMethodCount(methodCount: Int) {
-        mMap["genClassMethodCount"] = methodCount
-    }
-
-    fun configPackageExistState(isExist: Boolean) {
-        isPkgExist = isExist
     }
 
     fun configAvailableVariants(variants: HashSet<String>) {
@@ -106,9 +85,82 @@ object AppCodeGuardConfig {
         return excludeRulesList
     }
 
+    fun hasGenClassesInLocal(): Boolean = javaGenClassPaths.isNotEmpty()
+            && genPackagePaths.isNotEmpty() && packageExistStates.isNotEmpty()
+
     fun resetGenData() {
+        DLogger.info("resetGenData..")
+        if (hasGenClassesInLocal()) {
+            batchDeleteGenClass()
+        }
+        javaGenClassPaths.clear()
         genPackagePaths.clear()
         packageExistStates.clear()
+    }
+
+    fun batchDeleteGenClass() {
+        // Note: 如果包名之前不存在，需要将创建的包目录也一并删除(获取子包名的第一个目录)
+        if (isClearProcessing) {
+            DLogger.error("batchDeleteGenClass, is processing now.")
+            return
+        }
+        isClearProcessing = true
+        val genClassPaths = javaGenClassPaths
+        DLogger.info("batchDeleteGenClass, need del classes: ${genClassPaths.size}")
+        genClassPaths.forEach {
+            val key = extractPackageAndClassName(it.classPath)
+            val pgkExist = packageExistStates[key] ?: false
+            DLogger.error("batchDeleteGenClass, key => $key is exist: $pgkExist")
+            deleteGenClass(pgkExist, it)
+        }
+        javaGenClassPaths.clear()
+        isClearProcessing = false
+    }
+
+    private fun deleteGenClass(isPkgExist: Boolean, classBean: GenClassData) {
+        // Note: 如果包名之前不存在，需要将创建的包目录也一并删除(获取子包名的第一个目录)
+        if (isPkgExist) {
+            val genClassFile = File(classBean.classPath)
+            if (genClassFile.exists()) {
+                genClassFile.delete()
+            }
+            DLogger.error("deleteGenClass, path: ${classBean.classPath}")
+        } else {
+            val deleteDir = getDeleteDir(classBean.pkgName)
+            val genClassDir = File(deleteDir)
+            if (genClassDir.exists()) {
+                IOUtils.deleteDirectory(genClassDir)
+            }
+            DLogger.error("deleteGenClass dir succeed: $deleteDir")
+        }
+    }
+
+    private fun getDeleteDir(classPkgName: String): String {
+        val mainDir = javaCodeGenMainDir
+        val applicationId = AppCodeGuardConfig.applicationId
+        val temp = classPkgName.replace(applicationId, "")
+        val baseDir = applicationId + "." + temp.split(".")[1]
+        return mainDir + baseDir.replace(".", "/") + "/"
+    }
+
+    private fun extractPackageAndClassName(filePath: String): String? {
+        val file = File(filePath)
+
+        if (!file.exists() || !file.isFile) {
+            return null
+        }
+
+        val srcMainJava = "src${File.separator}main${File.separator}java"
+        val srcMainJavaIndex = filePath.indexOf(srcMainJava)
+
+        if (srcMainJavaIndex == -1) {
+            return null
+        }
+
+        val packagePath =
+            filePath.substring(srcMainJavaIndex + srcMainJava.length + 1, filePath.length - 5)
+
+        return packagePath.replace(File.separator, ".")
     }
 
     /**
