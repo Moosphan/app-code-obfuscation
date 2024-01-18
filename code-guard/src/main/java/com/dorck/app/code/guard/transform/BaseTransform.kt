@@ -36,7 +36,7 @@ abstract class BaseTransform : Transform() {
 
     // Config default scopes.
     override fun getScopes(): MutableSet<in QualifiedContent.Scope> {
-        return TransformManager.PROJECT_ONLY
+        return TransformManager.SCOPE_FULL_PROJECT
     }
 
     protected abstract fun realTransform(transformInvocation: TransformInvocation)

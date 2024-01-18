@@ -46,7 +46,8 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
                     val classEntity = SimpleClassEntity(packageName, clzName,
                         generateMethodList(
                             convertToPathFormat("$packageName.$clzName"),
-                            random.nextInt(6) + 10
+                            // 基于配置的生成方法数再加上浮动数避免规律性
+                            random.nextInt(6) + AppCodeGuardConfig.genClassMethodCount
                         )
                     )
                     mGenClassList.add(classEntity)
@@ -57,7 +58,7 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
                     AppCodeGuardConfig.genPackagePaths.add(it.pkgName)
                     pkgExistStates["${it.pkgName}.${it.className}"] = null
                 }
-                DLogger.error("initialize, gen pkg paths: ${AppCodeGuardConfig.genPackagePaths}")
+                DLogger.info("initialize, gen pkg paths: ${AppCodeGuardConfig.genPackagePaths}")
             }
         }
     }

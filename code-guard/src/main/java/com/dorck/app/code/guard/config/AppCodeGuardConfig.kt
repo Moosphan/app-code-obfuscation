@@ -23,6 +23,8 @@ object AppCodeGuardConfig {
 
     @Volatile
     var isClearProcessing: Boolean = false
+    @Volatile
+    var currentTransformExecVariant: String? = null
 
     // 默认的排除规则，需要规避掉系统使用的特殊class
     val DEFAULT_EXCLUDE_RULES = listOf("(R\\.class|BuildConfig\\.class)")
@@ -42,6 +44,7 @@ object AppCodeGuardConfig {
     // Class generation configs (生成供目标混淆函数内生成代码调用的类).
     val genClassCount: Int by mMap                          // 用于指定生成代码调用的目标类的数量 (可一定程度降低相似度、提高理解难度)
     val genClassPkgName: String by mMap
+    val genClassMethodCount: Int by mMap                    // 用于指定生成类的方法数
 
     var packageExistStates: HashMap<String, Boolean?> = hashMapOf()
     var genPackagePaths: HashSet<String> = hashSetOf()      // 生成类的包路径
@@ -50,7 +53,7 @@ object AppCodeGuardConfig {
     fun configureFromExtension(extension: CodeGuardConfigExtension) {
         mMap["genClassName"] = extension.generatedClassName
         mMap["genClassPkgName"] = extension.generatedClassPkg
-        mMap["genClassMethodCount"] = extension.generatedMethodCount
+        mMap["genClassMethodCount"] = extension.generatedClassMethodCount
         mMap["genClassCount"] = extension.genClassCount
         mMap["isUseDefaultStrategy"] = !CodeObfuscatorFactory.checkFileIfExist(extension.obfuscationDict)
         mMap["isEnableCodeObfuscateInMethod"] = extension.methodObfuscateEnable
@@ -88,6 +91,14 @@ object AppCodeGuardConfig {
     fun hasGenClassesInLocal(): Boolean = javaGenClassPaths.isNotEmpty()
             && genPackagePaths.isNotEmpty() && packageExistStates.isNotEmpty()
 
+    fun reset() {
+        DLogger.error("AppCodeGuardConfig >> reset ")
+        currentTransformExecVariant = null
+        isClearProcessing = false
+        mMap.clear()
+        resetGenData()
+    }
+
     fun resetGenData() {
         DLogger.info("resetGenData..")
         if (hasGenClassesInLocal()) {
@@ -98,7 +109,7 @@ object AppCodeGuardConfig {
         packageExistStates.clear()
     }
 
-    fun batchDeleteGenClass() {
+    fun batchDeleteGenClass(callback: (() -> Unit)? = null) {
         // Note: 如果包名之前不存在，需要将创建的包目录也一并删除(获取子包名的第一个目录)
         if (isClearProcessing) {
             DLogger.error("batchDeleteGenClass, is processing now.")
@@ -110,11 +121,13 @@ object AppCodeGuardConfig {
         genClassPaths.forEach {
             val key = extractPackageAndClassName(it.classPath)
             val pgkExist = packageExistStates[key] ?: false
-            DLogger.error("batchDeleteGenClass, key => $key is exist: $pgkExist")
+            DLogger.info("batchDeleteGenClass, key => $key is exist: $pgkExist, path: ${it.classPath}")
             deleteGenClass(pgkExist, it)
         }
+        DLogger.error("batchDeleteGenClass >>> delete all gen classes finished")
         javaGenClassPaths.clear()
         isClearProcessing = false
+        callback?.invoke()
     }
 
     private fun deleteGenClass(isPkgExist: Boolean, classBean: GenClassData) {
@@ -147,6 +160,7 @@ object AppCodeGuardConfig {
         val file = File(filePath)
 
         if (!file.exists() || !file.isFile) {
+            DLogger.error("extractPackageAndClassName, gen class file not exist: $filePath")
             return null
         }
 
@@ -154,6 +168,7 @@ object AppCodeGuardConfig {
         val srcMainJavaIndex = filePath.indexOf(srcMainJava)
 
         if (srcMainJavaIndex == -1) {
+            DLogger.error("extractPackageAndClassName, `src/main/java` dir not found")
             return null
         }
 
@@ -174,7 +189,7 @@ object AppCodeGuardConfig {
         javaGenClassPaths.forEach {
             val genClzPath = RandomCodeObfuscator.convertToPathFormat("${it.pkgName}.${it.className}")
             if (formattedPath.contains(genClzPath)) {
-                DLogger.error("checkExcludes, found gen path, ignore processing: $genClzPath >> $formattedPath")
+                DLogger.info("checkExcludes, found gen path, ignore processing: $genClzPath >> $formattedPath")
                 return true
             }
         }
@@ -187,7 +202,7 @@ object AppCodeGuardConfig {
         val excludeList = getExcludeRules()
         excludeList.forEach {
             val regex = Regex(it)
-            if (regex.matches(fileName)) {
+            if (regex.matches(fileName) || formattedPath.contains(it)) {
                 DLogger.error("checkExcludes, exclude file matches: $formattedPath")
                 return true
             }
@@ -208,7 +223,7 @@ object AppCodeGuardConfig {
     }
 
     fun readConfigs() {
-        DLogger.error(" AppCodeGuardConfig read config: $mMap")
+        DLogger.error(" AppCodeGuardConfig read config: $mMap \n >> gen config: $javaGenClassPaths")
     }
 
     data class GenClassData(

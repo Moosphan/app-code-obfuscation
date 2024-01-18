@@ -91,7 +91,7 @@ object CodeGenerator {
     }
 
     private fun parseType(descArray: CharArray, currentIndex: Int): Pair<String, Int> {
-        DLogger.error("parseType, desc: ${String(descArray)}")
+        DLogger.info("parseType, desc: ${String(descArray)}")
         return when (descArray[currentIndex]) {
             'V' -> Pair("void", currentIndex + 1)
             'Z' -> Pair("boolean", currentIndex + 1)
@@ -110,7 +110,7 @@ object CodeGenerator {
                         end = i
                     }
                 }
-                DLogger.error("parseType, string >> [$start, $end], ${String(descArray, start, end - start).replace('/', '.')}")
+                DLogger.info("parseType, string >> [$start, $end], ${String(descArray, start, end - start).replace('/', '.')}")
                 if (end == -1) {
                     throw IllegalArgumentException("Missing ';' for object type descriptor")
                 }
