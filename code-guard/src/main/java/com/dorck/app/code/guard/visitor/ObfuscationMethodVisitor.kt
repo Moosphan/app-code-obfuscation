@@ -38,7 +38,7 @@ class ObfuscationMethodVisitor(
 
     private fun insertCodeCall() {
         val randomMethodCall = obfuscator.nextCodeCall()
-        DLogger.error("visitCode >> randomMethodCall: ${randomMethodCall ?: "null"}")
+//        DLogger.info("visitCode >> randomMethodCall: ${randomMethodCall ?: "null"}")
         randomMethodCall?.let {
             this.mCurCall = randomMethodCall
             val methodName = randomMethodCall.name

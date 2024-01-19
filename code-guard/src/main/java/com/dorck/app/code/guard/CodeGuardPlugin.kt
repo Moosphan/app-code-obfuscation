@@ -28,7 +28,7 @@ class CodeGuardPlugin : Plugin<Project> {
 
         val codeGuardTransform = CodeGuardTransform(extension, project)
         val curBuildVariant = extractBuildVariant(project)
-        DLogger.error("get current build variant: $curBuildVariant")
+        project.logger.error("get current build variant: $curBuildVariant")
         AppCodeGuardConfig.configCurrentBuildVariant(curBuildVariant)
         clearGenArtifactsWhenFailed(project)
         // Note: The plugin extension only initialized after `project.afterEvaluate` has been called, so we could not check configs here.
@@ -54,7 +54,7 @@ class CodeGuardPlugin : Plugin<Project> {
                 // 1.如果用户配置了变体约束，需要根据变体判断是否执行
                 // 2.若与当前正在构建的variant不是同一个，则跳过执行
                 val variantRules = extension.variantConstraints
-                if (variantRules.isNotEmpty() && !variantRules.contains(variant.name) || curBuildVariant != variant.name) {
+                if (!isHandleOnVariant(variantRules, variant.name)) {
                     DLogger.error("variant [${variant.name}] ignore processing, current build variant: $curBuildVariant, rules: $variantRules")
                     return@handleEachVariant
                 }
@@ -86,13 +86,28 @@ class CodeGuardPlugin : Plugin<Project> {
                 // Note: 需要确保 Transform 处理完后再删除
                 // val packageTask = project.tasks.getByName("package${variant.name.capitalize()}")
                 val transformTask = project.tasks.getByName("transformClassesWith${CodeGuardTransform.TRANSFORM_NAME}For${variant.name.capitalize()}")
+                transformTask.doFirst {
+                    if (name.contains("Debug")) {
+                        AppCodeGuardConfig.currentTransformExecVariant = DEBUG_VARIANT
+                    } else if (name.contains("Release")) {
+                        AppCodeGuardConfig.currentTransformExecVariant = RELEASE_VARIANT
+                    }
+                }
                 transformTask.doLast {
-                    AppCodeGuardConfig.batchDeleteGenClass()
+                    AppCodeGuardConfig.batchDeleteGenClass() {
+                        // reset processing data
+                        AppCodeGuardConfig.reset()
+                    }
                 }
             }
 
         }
         project.android().registerTransform(codeGuardTransform)
+    }
+
+    private fun isHandleOnVariant(configRules: HashSet<String>, variant: String): Boolean {
+        val curBuildVariant = AppCodeGuardConfig.currentBuildVariant
+        return configRules.isEmpty() || (configRules.contains(variant) && curBuildVariant == variant)
     }
 
     private fun clearGenArtifactsWhenFailed(project: Project) {
@@ -139,7 +154,8 @@ class CodeGuardPlugin : Plugin<Project> {
 
     private fun extractBuildVariant(project: Project): String {
         val taskRequests = project.gradle.startParameter.taskRequests
-        var buildVariant: String = ""
+        // 默认为 release 下执行 (在执行assemble情况下)
+        var buildVariant: String = RELEASE_VARIANT
         taskRequests.forEach {  taskExecutionRequest ->
             taskExecutionRequest?.run {
                 args.forEach {
@@ -166,6 +182,8 @@ class CodeGuardPlugin : Plugin<Project> {
 
 
     companion object {
+        // 如果希望处理所有变体或未显式指定具体的variant(如 `assemble` task), 则可以指定该类型
+        private const val ALL_VARIANT_TYPE = "all"
         // 目前暂时仅支持系统默认的两种buildType
         private const val DEBUG_VARIANT = "debug"
         private const val RELEASE_VARIANT = "release"

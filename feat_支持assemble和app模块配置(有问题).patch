@@ -1,0 +1,568 @@
+Index: code-guard/src/main/java/com/dorck/app/code/guard/extension/CodeGuardConfigExtension.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/code-guard/src/main/java/com/dorck/app/code/guard/extension/CodeGuardConfigExtension.kt b/code-guard/src/main/java/com/dorck/app/code/guard/extension/CodeGuardConfigExtension.kt
+--- a/code-guard/src/main/java/com/dorck/app/code/guard/extension/CodeGuardConfigExtension.kt	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/code-guard/src/main/java/com/dorck/app/code/guard/extension/CodeGuardConfigExtension.kt	(date 1705394437260)
+@@ -39,7 +39,7 @@
+     // Generated java class name for code call.
+     var generatedClassName: String = ""
+     // Number of random methods generated in java class.
+-    var generatedMethodCount: Int = 3
++    var generatedClassMethodCount: Int = 3
+     // Number of generated classes.
+     var genClassCount: Int = 3
+     // Exclude rules which you don't want to obfuscate.
+@@ -47,6 +47,8 @@
+     // Specify a collection of variants for obfuscated execution.
+     // E.g, `release`, if empty, it will execute obfuscation in all variants.
+     var variantConstraints: HashSet<String> = HashSet()
++    // 是否处理 Jar
++    var isSkipJar: Boolean = false
+ 
+     override fun toString(): String {
+         return """
+@@ -57,6 +59,7 @@
+                 supportIncremental: $supportIncremental,
+                 processingPackages: $processingPackages,
+                 isSkipAbsClass: $isSkipAbsClass,
++                isSkipJarFilesProcessing: $isSkipJar
+                 isAutoAdapted: $isInsertCountAutoAdapted,
+                 maxFieldCount: $maxFieldCount,
+                 maxMethodCount: $maxMethodCount,
+@@ -66,7 +69,7 @@
+                 maxCodeLineCount: $maxCodeLineCount,
+                 generatedClassPkg: $generatedClassPkg,
+                 generatedClassName: $generatedClassName,
+-                generatedMethodCount: $generatedMethodCount,
++                generatedMethodCount: $generatedClassMethodCount,
+                 genClassCount: $genClassCount,
+                 excludeRules: $excludeRules,
+                 variantConstraints: $variantConstraints,
+Index: settings.gradle.kts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/settings.gradle.kts b/settings.gradle.kts
+--- a/settings.gradle.kts	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/settings.gradle.kts	(date 1705390664558)
+@@ -7,14 +7,14 @@
+         mavenLocal()
+     }
+ 
+-    /*resolutionStrategy {
++    resolutionStrategy {
+         eachPlugin {
+             if (requested.id.id == "cn.dorck.code.guarder") {
+-                useModule("cn.dorck:code-guard:0.1.1-LOCAL")
++                useModule("cn.dorck:code-guard-plugin:0.1.1-LOCAL")
+ //                useModule("cn.dorck.android:code-guard-plugin:0.0.1-SNAPSHOT")
+             }
+         }
+-    }*/
++    }
+ }
+ dependencyResolutionManagement {
+     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+Index: app/build.gradle.kts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/build.gradle.kts b/app/build.gradle.kts
+--- a/app/build.gradle.kts	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/app/build.gradle.kts	(date 1705393436011)
+@@ -3,7 +3,8 @@
+ plugins {
+     id("com.android.application")
+     id("org.jetbrains.kotlin.android")
+-    id("cn.dorck.code.guarder") version "0.1.4-beta"
++//    id("cn.dorck.code.guarder") version "0.1.4-beta"
++    id("cn.dorck.code.guarder")
+ }
+ 
+ android {
+@@ -44,9 +45,11 @@
+     enable = true
+     variantConstraints = hashSetOf("debug")
+     processingPackages = hashSetOf(
+-        "com.dorck.app.obfuscate.simple"
++        "com.dorck.app.obfuscate.simple",
++        "com.dorck.code.sample.library.SimpleClassInLib"
+     )
+     genClassCount = 5
++    isSkipJar = false
+ }
+ 
+ dependencies {
+@@ -58,4 +61,6 @@
+     testImplementation("junit:junit:4.13.2")
+     androidTestImplementation("androidx.test.ext:junit:1.1.5")
+     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
++
++    implementation(project(":librarysample"))
+ }
+\ No newline at end of file
+Index: code-guard/src/main/java/com/dorck/app/code/guard/transform/CodeGuardTransform.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/code-guard/src/main/java/com/dorck/app/code/guard/transform/CodeGuardTransform.kt b/code-guard/src/main/java/com/dorck/app/code/guard/transform/CodeGuardTransform.kt
+--- a/code-guard/src/main/java/com/dorck/app/code/guard/transform/CodeGuardTransform.kt	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/code-guard/src/main/java/com/dorck/app/code/guard/transform/CodeGuardTransform.kt	(date 1705457611910)
+@@ -2,16 +2,12 @@
+ 
+ import com.android.build.api.transform.Format
+ import com.android.build.api.transform.TransformInvocation
+-import com.android.utils.FileUtils
+ import com.dorck.app.code.guard.config.AppCodeGuardConfig
+ import com.dorck.app.code.guard.extension.CodeGuardConfigExtension
+ import com.dorck.app.code.guard.utils.DLogger
+ import com.dorck.app.code.guard.visitor.ObfuscationClassVisitor
+ import org.gradle.api.Project
+-import org.objectweb.asm.ClassReader
+ import org.objectweb.asm.ClassVisitor
+-import org.objectweb.asm.ClassWriter
+-import java.io.FileOutputStream
+ 
+ class CodeGuardTransform(
+     private val extension: CodeGuardConfigExtension,
+@@ -77,7 +73,11 @@
+                 // Jars无需处理，直接拷贝过去
+                 val dest = transformInvocation.outputProvider.getContentLocation(jarInput.name,
+                     jarInput.contentTypes, jarInput.scopes, Format.JAR)
+-                jarInput.file.copyRecursively(dest, true)
++                if (extension.isSkipJar) {
++                    jarInput.file.copyRecursively(dest, true)
++                } else {
++                    collectAndHandleJars(jarInput, transformInvocation.outputProvider, isIncremental)
++                }
+             }
+             it.directoryInputs.forEach { dirInput ->
+                 if (isAsmEnable) {
+@@ -91,7 +91,7 @@
+             }
+         }
+ 
+-        DLogger.info("The transform time cost: ${System.currentTimeMillis() - trsStartTime}ms")
++        DLogger.error("The transform time cost: ${System.currentTimeMillis() - trsStartTime}ms")
+     }
+ 
+     override fun createClassVisitor(api: Int, delegateClassVisitor: ClassVisitor): ClassVisitor {
+@@ -106,9 +106,11 @@
+      * If `variantConstraints` empty or matches in available variants, returns true.
+      */
+     private fun variantMatches(): Boolean {
+-        DLogger.error("variantMatches, rules: ${extension.variantConstraints}, curVariant: ${AppCodeGuardConfig.currentBuildVariant}")
++        DLogger.info("variantMatches, rules: ${extension.variantConstraints}, curVariant: ${AppCodeGuardConfig.currentBuildVariant}")
+         val variantRules = extension.variantConstraints
+-        if (variantRules.isEmpty() || variantRules.contains(AppCodeGuardConfig.currentBuildVariant)) {
++        // 构建类型匹配或者构建规则中指定了all类型，或者当前构建类型为all类型都会执行
++        if (variantRules.isEmpty() || variantRules.contains(AppCodeGuardConfig.currentBuildVariant)
++            || variantRules.contains("all") || AppCodeGuardConfig.currentBuildVariant == "all") {
+             return true
+         }
+         return false
+Index: code-guard/src/main/java/com/dorck/app/code/guard/CodeGuardPlugin.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/code-guard/src/main/java/com/dorck/app/code/guard/CodeGuardPlugin.kt b/code-guard/src/main/java/com/dorck/app/code/guard/CodeGuardPlugin.kt
+--- a/code-guard/src/main/java/com/dorck/app/code/guard/CodeGuardPlugin.kt	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/code-guard/src/main/java/com/dorck/app/code/guard/CodeGuardPlugin.kt	(date 1705410401842)
+@@ -28,7 +28,7 @@
+ 
+         val codeGuardTransform = CodeGuardTransform(extension, project)
+         val curBuildVariant = extractBuildVariant(project)
+-        DLogger.error("get current build variant: $curBuildVariant")
++        project.logger.error("get current build variant: $curBuildVariant")
+         AppCodeGuardConfig.configCurrentBuildVariant(curBuildVariant)
+         clearGenArtifactsWhenFailed(project)
+         // Note: The plugin extension only initialized after `project.afterEvaluate` has been called, so we could not check configs here.
+@@ -54,7 +54,8 @@
+                 // 1.如果用户配置了变体约束，需要根据变体判断是否执行
+                 // 2.若与当前正在构建的variant不是同一个，则跳过执行
+                 val variantRules = extension.variantConstraints
+-                if (variantRules.isNotEmpty() && !variantRules.contains(variant.name) || curBuildVariant != variant.name) {
++                if (variantRules.isNotEmpty() && ((!variantRules.contains(ALL_VARIANT_TYPE) && curBuildVariant != ALL_VARIANT_TYPE) &&
++                    (!variantRules.contains(variant.name) || curBuildVariant != variant.name))) {
+                     DLogger.error("variant [${variant.name}] ignore processing, current build variant: $curBuildVariant, rules: $variantRules")
+                     return@handleEachVariant
+                 }
+@@ -139,7 +140,8 @@
+ 
+     private fun extractBuildVariant(project: Project): String {
+         val taskRequests = project.gradle.startParameter.taskRequests
+-        var buildVariant: String = ""
++        // 默认为 release 下执行 (在执行assemble情况下)
++        var buildVariant: String = RELEASE_VARIANT
+         taskRequests.forEach {  taskExecutionRequest ->
+             taskExecutionRequest?.run {
+                 args.forEach {
+@@ -166,6 +168,8 @@
+ 
+ 
+     companion object {
++        // 如果希望处理所有变体或未显式指定具体的variant(如 `assemble` task), 则可以指定该类型
++        private const val ALL_VARIANT_TYPE = "all"
+         // 目前暂时仅支持系统默认的两种buildType
+         private const val DEBUG_VARIANT = "debug"
+         private const val RELEASE_VARIANT = "release"
+Index: code-guard/build.gradle.kts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/code-guard/build.gradle.kts b/code-guard/build.gradle.kts
+--- a/code-guard/build.gradle.kts	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/code-guard/build.gradle.kts	(date 1705392909137)
+@@ -1,10 +1,10 @@
+ plugins {
+     `java-gradle-plugin`
+     `kotlin-dsl`
+-    signing
+-    id("com.gradle.plugin-publish") version "1.0.0-rc-1"
++//    signing
++//    id("com.gradle.plugin-publish") version "1.0.0-rc-1"
+     // Only used for local testing.
+-//    id("cn.dorck.component.publisher") version "1.0.4"
++    id("cn.dorck.component.publisher") version "1.0.4"
+ }
+ 
+ // Load and configure secrets of publication.
+@@ -38,18 +38,18 @@
+ group = PluginInfo.group
+ version = PluginInfo.version
+ 
+-/*publishOptions {
++publishOptions {
+     group = PluginInfo.group
+     version = PluginInfo.version
+     artifactId = PluginInfo.artifactId
+     description = PluginInfo.description
+-}*/
+-
+-pluginBundle {
+-    website = "https://github.com/Moosphan/app-code-obfuscation"
+-    vcsUrl = "https://github.com/Moosphan/app-code-obfuscation.git"
+-    tags = listOf("code obfuscation", "proguard", "bytecode enhancement", "Apk obfuscate")
+ }
++//
++//pluginBundle {
++//    website = "https://github.com/Moosphan/app-code-obfuscation"
++//    vcsUrl = "https://github.com/Moosphan/app-code-obfuscation.git"
++//    tags = listOf("code obfuscation", "proguard", "bytecode enhancement", "Apk obfuscate")
++//}
+ 
+ gradlePlugin {
+     plugins {
+@@ -81,7 +81,7 @@
+     implementation("com.android.tools:common:26.6.3")
+     implementation("com.google.code.gson:gson:2.8.6")
+ }
+-
++/*
+ afterEvaluate {
+     publishing {
+         publications {
+@@ -139,7 +139,7 @@
+             }
+         }
+     }
+-}
++}*/
+ 
+ object PluginInfo {
+     const val id = "cn.dorck.code.guarder"
+@@ -147,8 +147,8 @@
+     const val group = "cn.dorck"
+     const val artifactId = "code-guard-plugin"
+     const val implementationClass = "com.dorck.app.code.guard.CodeGuardPlugin"
+-    const val version = "0.1.4-beta"
+-//    const val version = "0.1.1-LOCAL"
++//    const val version = "0.1.4-beta"
++    const val version = "0.1.1-LOCAL"
+     const val displayName = "CodeGuardPlugin"
+     const val description = "A plugin for code obfuscation."
+     const val url = "https://github.com/Moosphan/app-code-obfuscation"
+Index: librarysample/build.gradle.kts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/librarysample/build.gradle.kts b/librarysample/build.gradle.kts
+--- a/librarysample/build.gradle.kts	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/librarysample/build.gradle.kts	(date 1705390628774)
+@@ -1,6 +1,6 @@
+ plugins {
+     id("com.android.library")
+-    id("cn.dorck.code.guarder") version "0.1.4-beta"
++//    id("cn.dorck.code.guarder") version "0.1.4-beta"
+ }
+ 
+ android {
+@@ -29,13 +29,13 @@
+     }
+ }
+ 
+-codeGuard {
+-    enable = true
+-    variantConstraints = hashSetOf("debug")
+-    processingPackages = hashSetOf(
+-        "com.dorck.code.sample.library"
+-    )
+-}
++//codeGuard {
++//    enable = true
++//    variantConstraints = hashSetOf("debug")
++//    processingPackages = hashSetOf(
++//        "com.dorck.code.sample.library"
++//    )
++//}
+ 
+ dependencies {
+ 
+Index: code-guard/src/main/java/com/dorck/app/code/guard/config/AppCodeGuardConfig.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/code-guard/src/main/java/com/dorck/app/code/guard/config/AppCodeGuardConfig.kt b/code-guard/src/main/java/com/dorck/app/code/guard/config/AppCodeGuardConfig.kt
+--- a/code-guard/src/main/java/com/dorck/app/code/guard/config/AppCodeGuardConfig.kt	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/code-guard/src/main/java/com/dorck/app/code/guard/config/AppCodeGuardConfig.kt	(date 1705409437594)
+@@ -42,6 +42,7 @@
+     // Class generation configs (生成供目标混淆函数内生成代码调用的类).
+     val genClassCount: Int by mMap                          // 用于指定生成代码调用的目标类的数量 (可一定程度降低相似度、提高理解难度)
+     val genClassPkgName: String by mMap
++    val genClassMethodCount: Int by mMap                    // 用于指定生成类的方法数
+ 
+     var packageExistStates: HashMap<String, Boolean?> = hashMapOf()
+     var genPackagePaths: HashSet<String> = hashSetOf()      // 生成类的包路径
+@@ -50,7 +51,7 @@
+     fun configureFromExtension(extension: CodeGuardConfigExtension) {
+         mMap["genClassName"] = extension.generatedClassName
+         mMap["genClassPkgName"] = extension.generatedClassPkg
+-        mMap["genClassMethodCount"] = extension.generatedMethodCount
++        mMap["genClassMethodCount"] = extension.generatedClassMethodCount
+         mMap["genClassCount"] = extension.genClassCount
+         mMap["isUseDefaultStrategy"] = !CodeObfuscatorFactory.checkFileIfExist(extension.obfuscationDict)
+         mMap["isEnableCodeObfuscateInMethod"] = extension.methodObfuscateEnable
+@@ -110,7 +111,7 @@
+         genClassPaths.forEach {
+             val key = extractPackageAndClassName(it.classPath)
+             val pgkExist = packageExistStates[key] ?: false
+-            DLogger.error("batchDeleteGenClass, key => $key is exist: $pgkExist")
++            DLogger.info("batchDeleteGenClass, key => $key is exist: $pgkExist")
+             deleteGenClass(pgkExist, it)
+         }
+         javaGenClassPaths.clear()
+@@ -174,7 +175,7 @@
+         javaGenClassPaths.forEach {
+             val genClzPath = RandomCodeObfuscator.convertToPathFormat("${it.pkgName}.${it.className}")
+             if (formattedPath.contains(genClzPath)) {
+-                DLogger.error("checkExcludes, found gen path, ignore processing: $genClzPath >> $formattedPath")
++                DLogger.info("checkExcludes, found gen path, ignore processing: $genClzPath >> $formattedPath")
+                 return true
+             }
+         }
+@@ -187,7 +188,7 @@
+         val excludeList = getExcludeRules()
+         excludeList.forEach {
+             val regex = Regex(it)
+-            if (regex.matches(fileName)) {
++            if (regex.matches(fileName) || formattedPath.contains(it)) {
+                 DLogger.error("checkExcludes, exclude file matches: $formattedPath")
+                 return true
+             }
+Index: code-guard/src/main/java/com/dorck/app/code/guard/utils/CodeGenerator.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/code-guard/src/main/java/com/dorck/app/code/guard/utils/CodeGenerator.kt b/code-guard/src/main/java/com/dorck/app/code/guard/utils/CodeGenerator.kt
+--- a/code-guard/src/main/java/com/dorck/app/code/guard/utils/CodeGenerator.kt	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/code-guard/src/main/java/com/dorck/app/code/guard/utils/CodeGenerator.kt	(date 1705400031759)
+@@ -91,7 +91,7 @@
+     }
+ 
+     private fun parseType(descArray: CharArray, currentIndex: Int): Pair<String, Int> {
+-        DLogger.error("parseType, desc: ${String(descArray)}")
++        DLogger.info("parseType, desc: ${String(descArray)}")
+         return when (descArray[currentIndex]) {
+             'V' -> Pair("void", currentIndex + 1)
+             'Z' -> Pair("boolean", currentIndex + 1)
+@@ -110,7 +110,7 @@
+                         end = i
+                     }
+                 }
+-                DLogger.error("parseType, string >> [$start, $end], ${String(descArray, start, end - start).replace('/', '.')}")
++                DLogger.info("parseType, string >> [$start, $end], ${String(descArray, start, end - start).replace('/', '.')}")
+                 if (end == -1) {
+                     throw IllegalArgumentException("Missing ';' for object type descriptor")
+                 }
+Index: code-guard/src/main/java/com/dorck/app/code/guard/utils/DLogger.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/code-guard/src/main/java/com/dorck/app/code/guard/utils/DLogger.kt b/code-guard/src/main/java/com/dorck/app/code/guard/utils/DLogger.kt
+--- a/code-guard/src/main/java/com/dorck/app/code/guard/utils/DLogger.kt	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/code-guard/src/main/java/com/dorck/app/code/guard/utils/DLogger.kt	(date 1705400031765)
+@@ -12,9 +12,9 @@
+      */
+     fun error(errorMessage: String) {
+         try {
+-            if (debug) {
++//            if (debug) {
+                 println("${LogUI.ERROR.value}[$TAG]:$errorMessage${LogUI.END.value}")
+-            }
++//            }
+         } catch (ex: Exception) {
+             ex.printStackTrace()
+         }
+Index: code-guard/src/main/java/com/dorck/app/code/guard/transform/BaseTransform.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/code-guard/src/main/java/com/dorck/app/code/guard/transform/BaseTransform.kt b/code-guard/src/main/java/com/dorck/app/code/guard/transform/BaseTransform.kt
+--- a/code-guard/src/main/java/com/dorck/app/code/guard/transform/BaseTransform.kt	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/code-guard/src/main/java/com/dorck/app/code/guard/transform/BaseTransform.kt	(date 1705394238581)
+@@ -36,7 +36,7 @@
+ 
+     // Config default scopes.
+     override fun getScopes(): MutableSet<in QualifiedContent.Scope> {
+-        return TransformManager.PROJECT_ONLY
++        return TransformManager.SCOPE_FULL_PROJECT
+     }
+ 
+     protected abstract fun realTransform(transformInvocation: TransformInvocation)
+Index: README.md
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/README.md b/README.md
+--- a/README.md	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/README.md	(date 1705400868553)
+@@ -99,6 +99,7 @@
+ - [x] 支持手动执行 Task 来清除生成的随机调用类
+ - [x] 支持自动清除随机调用类(监听编译失败的时机)
+ - [x] 修复生成随机变量或方法名与内置关键字冲突导致的编译问题 [issue#8](https://github.com/Moosphan/app-code-obfuscation/issues/8)
++- [ ] 执行多变体构建出现 `ClassNotFound` 问题，如 `assemble`
+ 
+ ### 维护计划
+ 关于近期开发计划请参考 [目前进展专区](https://github.com/Moosphan/app-code-obfuscation?tab=readme-ov-file#%E5%BD%93%E5%89%8D%E8%BF%9B%E5%B1%95) 。目前笔者会在感兴趣的领域从事一些开源的项目，如果你对本项目有什么好的建议或者问题，欢迎移步 [Issue](https://github.com/Moosphan/app-code-obfuscation/issues) 说出的你的想法和问题，这将有助于该项目更加持续稳定的面向更多开发者使用。 
+Index: code-guard/src/main/java/com/dorck/app/code/guard/visitor/ObfuscationMethodVisitor.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/code-guard/src/main/java/com/dorck/app/code/guard/visitor/ObfuscationMethodVisitor.kt b/code-guard/src/main/java/com/dorck/app/code/guard/visitor/ObfuscationMethodVisitor.kt
+--- a/code-guard/src/main/java/com/dorck/app/code/guard/visitor/ObfuscationMethodVisitor.kt	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/code-guard/src/main/java/com/dorck/app/code/guard/visitor/ObfuscationMethodVisitor.kt	(date 1705400031783)
+@@ -38,7 +38,7 @@
+ 
+     private fun insertCodeCall() {
+         val randomMethodCall = obfuscator.nextCodeCall()
+-        DLogger.error("visitCode >> randomMethodCall: ${randomMethodCall ?: "null"}")
++        DLogger.info("visitCode >> randomMethodCall: ${randomMethodCall ?: "null"}")
+         randomMethodCall?.let {
+             this.mCurCall = randomMethodCall
+             val methodName = randomMethodCall.name
+Index: code-guard/src/main/java/com/dorck/app/code/guard/obfuscate/RandomCodeObfuscator.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/code-guard/src/main/java/com/dorck/app/code/guard/obfuscate/RandomCodeObfuscator.kt b/code-guard/src/main/java/com/dorck/app/code/guard/obfuscate/RandomCodeObfuscator.kt
+--- a/code-guard/src/main/java/com/dorck/app/code/guard/obfuscate/RandomCodeObfuscator.kt	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/code-guard/src/main/java/com/dorck/app/code/guard/obfuscate/RandomCodeObfuscator.kt	(date 1705400031795)
+@@ -46,7 +46,8 @@
+                     val classEntity = SimpleClassEntity(packageName, clzName,
+                         generateMethodList(
+                             convertToPathFormat("$packageName.$clzName"),
+-                            random.nextInt(6) + 10
++                            // 基于配置的生成方法数再加上浮动数避免规律性
++                            random.nextInt(6) + AppCodeGuardConfig.genClassMethodCount
+                         )
+                     )
+                     mGenClassList.add(classEntity)
+@@ -57,7 +58,7 @@
+                     AppCodeGuardConfig.genPackagePaths.add(it.pkgName)
+                     pkgExistStates["${it.pkgName}.${it.className}"] = null
+                 }
+-                DLogger.error("initialize, gen pkg paths: ${AppCodeGuardConfig.genPackagePaths}")
++                DLogger.info("initialize, gen pkg paths: ${AppCodeGuardConfig.genPackagePaths}")
+             }
+         }
+     }
+Index: code-guard/src/main/java/com/dorck/app/code/guard/visitor/ObfuscationClassVisitor.kt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/code-guard/src/main/java/com/dorck/app/code/guard/visitor/ObfuscationClassVisitor.kt b/code-guard/src/main/java/com/dorck/app/code/guard/visitor/ObfuscationClassVisitor.kt
+--- a/code-guard/src/main/java/com/dorck/app/code/guard/visitor/ObfuscationClassVisitor.kt	(revision 59229e601b2c871f8d39432e4313b8dee0bf1824)
++++ b/code-guard/src/main/java/com/dorck/app/code/guard/visitor/ObfuscationClassVisitor.kt	(date 1705404592564)
+@@ -40,7 +40,7 @@
+         if (mMaxFieldsSize == UNINITIALIZED_VALUE) {
+             mMaxFieldsSize = extension.maxFieldCount
+         }
+-        DLogger.error("visitField, mMaxFieldsSize: $mMaxFieldsSize")
++        DLogger.info("visitField, mMaxFieldsSize: $mMaxFieldsSize")
+         val obfuscator = CodeObfuscatorFactory.getCodeObfuscator(extension)
+         // Insert at random index(始终保证插入变量数目少于配置的数量上限).
+         if (!isInterface && obfuscator.shouldInsertElement() && mFieldInsertionCount <= mMaxFieldsSize) {
+@@ -56,7 +56,7 @@
+ 
+     override fun visitEnd() {
+         initializeMaxCount()
+-        DLogger.error("visitEnd, current insert field count: [$mFieldInsertionCount/$mMaxFieldsSize], method count: [$mMethodInsertionCount/$mMaxMethodsSize]")
++        DLogger.info("visitEnd, current insert field count: [$mFieldInsertionCount/$mMaxFieldsSize], method count: [$mMethodInsertionCount/$mMaxMethodsSize]")
+         // 如果插入数量不足需要补齐
+         val obfuscator = CodeObfuscatorFactory.getCodeObfuscator(extension)
+         if (!isInterface && mFieldInsertionCount <= mMaxFieldsSize) {
+@@ -70,7 +70,7 @@
+             }
+         }
+         super.visitEnd()
+-        DLogger.error("visitEnd finished, field inserted count: $mFieldInsertionCount, method count: $mMethodInsertionCount")
++        DLogger.info("visitEnd finished, field inserted count: $mFieldInsertionCount, method count: $mMethodInsertionCount")
+     }
+ 
+     override fun visit(
+@@ -88,7 +88,7 @@
+ //        }
+         isAbsClz = (access and Opcodes.ACC_ABSTRACT) != 0
+         isInterface = (access and Opcodes.ACC_INTERFACE) != 0
+-        DLogger.error("visit class [$className], isInsertCountAutoAdapt: ${extension.isInsertCountAutoAdapted}")
++        DLogger.info("visit class [$className], isInsertCountAutoAdapt: ${extension.isInsertCountAutoAdapted}")
+     }
+ 
+     override fun visitMethod(
+@@ -116,7 +116,9 @@
+             insertRandomMethod(obfuscator)
+         }
+         // 注意插入的方法不需要执行函数内的代码插入
+-        return ObfuscationMethodVisitor(extension.maxCodeLineCount, extension.isInsertCountAutoAdapted, obfuscator, api, curMethodVisitor)
++        return if (extension.methodObfuscateEnable) {
++            ObfuscationMethodVisitor(extension.maxCodeLineCount, extension.isInsertCountAutoAdapted, obfuscator, api, curMethodVisitor)
++        } else curMethodVisitor
+     }
+ 
+     private fun insertRandomField(obfuscator: IAppCodeObfuscator): FieldVisitor? {
+@@ -124,7 +126,7 @@
+         val randomField = obfuscator.nextField()
+         // Ignore existing fields with the same name.
+         if (!isFieldExist(randomField.name, randomField.type)) {
+-            DLogger.error("Start to insert random field: $randomField")
++            DLogger.info("Start to insert random field: $randomField")
+             // Start insert field.
+             mCurInsertedField = randomField
+             mFieldInsertionCount++

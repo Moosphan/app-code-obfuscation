@@ -39,7 +39,7 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     // Generated java class name for code call.
     var generatedClassName: String = ""
     // Number of random methods generated in java class.
-    var generatedMethodCount: Int = 3
+    var generatedClassMethodCount: Int = 3
     // Number of generated classes.
     var genClassCount: Int = 3
     // Exclude rules which you don't want to obfuscate.
@@ -47,6 +47,8 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     // Specify a collection of variants for obfuscated execution.
     // E.g, `release`, if empty, it will execute obfuscation in all variants.
     var variantConstraints: HashSet<String> = HashSet()
+    // 是否处理 Jar
+    var isSkipJar: Boolean = false
 
     override fun toString(): String {
         return """
@@ -57,6 +59,7 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
                 supportIncremental: $supportIncremental,
                 processingPackages: $processingPackages,
                 isSkipAbsClass: $isSkipAbsClass,
+                isSkipJarFilesProcessing: $isSkipJar
                 isAutoAdapted: $isInsertCountAutoAdapted,
                 maxFieldCount: $maxFieldCount,
                 maxMethodCount: $maxMethodCount,
@@ -66,7 +69,7 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
                 maxCodeLineCount: $maxCodeLineCount,
                 generatedClassPkg: $generatedClassPkg,
                 generatedClassName: $generatedClassName,
-                generatedMethodCount: $generatedMethodCount,
+                generatedMethodCount: $generatedClassMethodCount,
                 genClassCount: $genClassCount,
                 excludeRules: $excludeRules,
                 variantConstraints: $variantConstraints,

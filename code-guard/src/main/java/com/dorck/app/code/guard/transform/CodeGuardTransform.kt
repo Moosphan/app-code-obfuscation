@@ -2,16 +2,12 @@ package com.dorck.app.code.guard.transform
 
 import com.android.build.api.transform.Format
 import com.android.build.api.transform.TransformInvocation
-import com.android.utils.FileUtils
 import com.dorck.app.code.guard.config.AppCodeGuardConfig
 import com.dorck.app.code.guard.extension.CodeGuardConfigExtension
 import com.dorck.app.code.guard.utils.DLogger
 import com.dorck.app.code.guard.visitor.ObfuscationClassVisitor
 import org.gradle.api.Project
-import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
-import org.objectweb.asm.ClassWriter
-import java.io.FileOutputStream
 
 class CodeGuardTransform(
     private val extension: CodeGuardConfigExtension,
@@ -41,34 +37,6 @@ class CodeGuardTransform(
         if (!isIncremental) {
             transformInvocation.outputProvider.deleteAll()
         }
-//        val inputs = transformInvocation.inputs
-//        inputs?.forEach {
-//            it.directoryInputs.forEach {
-//                val dest = transformInvocation.outputProvider?.getContentLocation(
-//                    it.name,
-//                    it.contentTypes,
-//                    it.scopes,
-//                    Format.DIRECTORY
-//                )
-//                if (it.file.isDirectory) {
-//                    FileUtils.getAllFiles(it.file).forEach { file ->
-//                        transformClassFile(file, dest!!)
-//                    }
-//                }
-//                FileUtils.copyDirectoryToDirectory(it.file, dest)
-//            }
-//
-//
-//            it.jarInputs.forEach {
-//                val dest = transformInvocation.outputProvider?.getContentLocation(
-//                    it.name,
-//                    it.contentTypes,
-//                    it.scopes,
-//                    Format.JAR
-//                )
-//                FileUtils.copyFile(it.file, dest)
-//            }
-//        }
 
         transformInvocation.inputs.forEach {
             DLogger.info("Transform jar input size: ${it.jarInputs.size}, dir input size: ${it.directoryInputs.size}")
@@ -77,7 +45,11 @@ class CodeGuardTransform(
                 // Jars无需处理，直接拷贝过去
                 val dest = transformInvocation.outputProvider.getContentLocation(jarInput.name,
                     jarInput.contentTypes, jarInput.scopes, Format.JAR)
-                jarInput.file.copyRecursively(dest, true)
+                if (!extension.isSkipJar && isAsmEnable) {
+                    collectAndHandleJars(jarInput, transformInvocation.outputProvider, isIncremental)
+                } else {
+                    jarInput.file.copyRecursively(dest, true)
+                }
             }
             it.directoryInputs.forEach { dirInput ->
                 if (isAsmEnable) {
@@ -91,7 +63,7 @@ class CodeGuardTransform(
             }
         }
 
-        DLogger.info("The transform time cost: ${System.currentTimeMillis() - trsStartTime}ms")
+        DLogger.error("The transform time cost: ${System.currentTimeMillis() - trsStartTime}ms")
     }
 
     override fun createClassVisitor(api: Int, delegateClassVisitor: ClassVisitor): ClassVisitor {
@@ -106,9 +78,13 @@ class CodeGuardTransform(
      * If `variantConstraints` empty or matches in available variants, returns true.
      */
     private fun variantMatches(): Boolean {
-        DLogger.error("variantMatches, rules: ${extension.variantConstraints}, curVariant: ${AppCodeGuardConfig.currentBuildVariant}")
+        DLogger.info("variantMatches, rules: ${extension.variantConstraints}, curVariant: ${AppCodeGuardConfig.currentBuildVariant}, curTransformVariant: ${AppCodeGuardConfig.currentTransformExecVariant}")
         val variantRules = extension.variantConstraints
-        if (variantRules.isEmpty() || variantRules.contains(AppCodeGuardConfig.currentBuildVariant)) {
+        // TODO 2024/01/17 临时做法，防止执行assemble时debug也会参与到后续transform
+        // 构建类型匹配或者构建规则中指定了all类型，或者当前构建类型为all类型都会执行
+        if (variantRules.isEmpty() || (variantRules.contains(AppCodeGuardConfig.currentBuildVariant)
+                    && !AppCodeGuardConfig.currentTransformExecVariant.isNullOrEmpty() && AppCodeGuardConfig.currentTransformExecVariant == AppCodeGuardConfig.currentBuildVariant)
+            || variantRules.contains("all") || AppCodeGuardConfig.currentBuildVariant == "all") {
             return true
         }
         return false
