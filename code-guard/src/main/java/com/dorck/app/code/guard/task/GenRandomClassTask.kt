@@ -17,6 +17,7 @@ abstract class GenRandomClassTask : DefaultTask() {
 
     @TaskAction
     fun generateClass() {
+        project.logger.error("===> previous config: ${AppCodeGuardConfig.getAllConfigs()}")
         project.logger.error("===========> Start generate class <==========")
         val appID = project.getPackageName() ?: "com.x.y.z"
         // Inject applicationId into global configs.

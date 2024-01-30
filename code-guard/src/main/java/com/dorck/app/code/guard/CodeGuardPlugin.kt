@@ -44,6 +44,8 @@ class CodeGuardPlugin : Plugin<Project> {
             }
             // Register task for deleting generated classes.
             registerClearGenTask(project)
+            // Register task for read guarder configs.
+            registerReadConfigTask(project)
             // 基于preBuild任务时机来插入源码到指定`src/main/java`下，便于混淆代码参与到compile阶段
             val variants = HashSet<String>()
             project.handleEachVariant { variant ->
@@ -94,6 +96,7 @@ class CodeGuardPlugin : Plugin<Project> {
                     }
                 }
                 transformTask.doLast {
+                    DLogger.error("Print configs before clear gen artifacts: ${AppCodeGuardConfig.getAllConfigs()}")
                     AppCodeGuardConfig.batchDeleteGenClass() {
                         // reset processing data
                         AppCodeGuardConfig.reset()
@@ -140,6 +143,14 @@ class CodeGuardPlugin : Plugin<Project> {
             } else {
                 DLogger.error("Has no gen classes in local: ${AppCodeGuardConfig.javaGenClassPaths}")
             }
+        }
+    }
+
+    private fun registerReadConfigTask(project: Project) {
+        DLogger.error("registerReadConfigTask...")
+        project.tasks.register("readGuarderConfigs") {
+            group = "codeGuarder"
+            project.logger.error("[CodeGuardPlugin] >> read configs: ${AppCodeGuardConfig.getAllConfigs()}")
         }
     }
 

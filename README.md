@@ -100,6 +100,8 @@ codeGuard {
 - [x] 支持自动清除随机调用类(监听编译失败的时机)
 - [x] 修复生成随机变量或方法名与内置关键字冲突导致的编译问题 [issue#8](https://github.com/Moosphan/app-code-obfuscation/issues/8)
 - [ ] 执行多变体构建出现 `ClassNotFound` 问题，如 `assemble`(暂时强制绑定执行类型为Release)
+- [ ] 打 `installRelease` 时第二次会闪退，提示 `java.lang.NoClassDefFoundError` 找不到生成类 (原因推测：由于缓存原因dex没有清除并重新生成，导致还残留上一次的生成的字节码调用信息)
+- [ ] 支持手动执行Task来输出当前配置信息，方便排查问题
 
 ### 维护计划
 关于近期开发计划请参考 [目前进展专区](https://github.com/Moosphan/app-code-obfuscation?tab=readme-ov-file#%E5%BD%93%E5%89%8D%E8%BF%9B%E5%B1%95) 。目前笔者会在感兴趣的领域从事一些开源的项目，如果你对本项目有什么好的建议或者问题，欢迎移步 [Issue](https://github.com/Moosphan/app-code-obfuscation/issues) 说出的你的想法和问题，这将有助于该项目更加持续稳定的面向更多开发者使用。 

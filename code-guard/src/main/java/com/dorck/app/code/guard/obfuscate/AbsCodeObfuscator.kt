@@ -4,7 +4,6 @@ import java.util.Random
 
 abstract class AbsCodeObfuscator : IAppCodeObfuscator {
     protected val random = Random()
-    protected abstract var mClassEntity: SimpleClassEntity?
     protected abstract var mGenClassList: MutableList<SimpleClassEntity>
 
     /**
@@ -14,7 +13,7 @@ abstract class AbsCodeObfuscator : IAppCodeObfuscator {
         return /*random.nextBoolean()*/ true
     }
 
-    fun getCurClassEntity(): SimpleClassEntity? = mClassEntity
-
     fun getGenClassEntityList(): List<SimpleClassEntity> = mGenClassList
+
+    open fun reset() {}
 }

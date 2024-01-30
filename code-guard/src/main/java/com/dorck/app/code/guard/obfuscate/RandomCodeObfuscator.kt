@@ -23,13 +23,12 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
     private val BASIC_TYPES = arrayListOf("B", "S", "I", "J", "F", "D", "C", "Z", "Ljava/lang/String;")
     private val METHOD_PARAM_TYPES = arrayListOf("()V", "(B)V", "(S)V", "(I)V", "(J)V", "(F)V", "(D)V", "(C)V", "(Z)V", "(Ljava/lang/String;)V")
     // 用于插入代码调用的目标类(可通过插件自定义或使用默认策略)
-    override var mClassEntity: SimpleClassEntity? = null
     override var mGenClassList: MutableList<SimpleClassEntity> = mutableListOf()
 
     override fun initialize() {
         if (AppCodeGuardConfig.isEnableCodeObfuscateInMethod) {
             // Reset data.
-            resetData()
+            reset()
             // Generate code calling classes in batches.
             val genClassCount = AppCodeGuardConfig.genClassCount
             if (genClassCount > 0) {
@@ -63,7 +62,7 @@ object RandomCodeObfuscator: AbsCodeObfuscator() {
         }
     }
 
-    private fun resetData() {
+    override fun reset() {
         AppCodeGuardConfig.resetGenData()
         mGenClassList.clear()
     }

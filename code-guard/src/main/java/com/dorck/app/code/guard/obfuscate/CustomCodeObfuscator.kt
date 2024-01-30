@@ -25,7 +25,6 @@ object CustomCodeObfuscator : AbsCodeObfuscator() {
         return false
     }
 
-    override var mClassEntity: SimpleClassEntity? = null
     override var mGenClassList: MutableList<SimpleClassEntity> = mutableListOf()
 
     override fun initialize() {

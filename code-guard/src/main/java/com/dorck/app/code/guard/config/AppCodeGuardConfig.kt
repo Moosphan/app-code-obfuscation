@@ -95,8 +95,9 @@ object AppCodeGuardConfig {
         DLogger.error("AppCodeGuardConfig >> reset ")
         currentTransformExecVariant = null
         isClearProcessing = false
-        mMap.clear()
         resetGenData()
+        mMap.clear()
+        RandomCodeObfuscator.reset()
     }
 
     fun resetGenData() {
@@ -222,8 +223,18 @@ object AppCodeGuardConfig {
         return packageList.isEmpty() || isTrackPackage
     }
 
+    fun getAllConfigs(): String {
+        return """
+            common: $mMap,
+            javaGenClassPaths: $javaGenClassPaths,
+            genPackagePaths: $genPackagePaths,
+            packageExistStates: $packageExistStates,
+            codeObfuscator: ${RandomCodeObfuscator.getGenClassEntityList()}
+        """.trimIndent()
+    }
+
     fun readConfigs() {
-        DLogger.error(" AppCodeGuardConfig read config: $mMap \n >> gen config: $javaGenClassPaths")
+        DLogger.error(" AppCodeGuardConfig read config: ${getAllConfigs()}")
     }
 
     data class GenClassData(
