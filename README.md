@@ -67,6 +67,7 @@ codeGuard {
 - [x] 支持针对多个随机类的方法调用
 - [x] 针对随机方法调用提供多参数支持
 - [x] 增加对随机方法调用参数默认值的随机化处理
+- [ ] 增加反编译时预防dex2jar的处理
 - [ ] 多线程并行执行，优化混淆速度
 - [ ] APK体积和编译时常影响分析
 - [ ] 自定义混淆字典功能
@@ -108,7 +109,7 @@ codeGuard {
 
 ### License
 ```
-   Copyright [2023] [Moosphan]
+   Copyright [2023-2024] [Moosphan]
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
