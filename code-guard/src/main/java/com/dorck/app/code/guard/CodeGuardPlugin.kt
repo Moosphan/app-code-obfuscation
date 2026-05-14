@@ -63,6 +63,10 @@ class CodeGuardPlugin : Plugin<Project> {
             registerClearGenTask(project)
             registerReadConfigTask(project)
 
+            // 将生成目录添加到源码集，避免污染 src/main/java
+            val genDir = File(project.buildDir, "generated/codeguard/java")
+            project.android().sourceSets.getByName("main").java.srcDir(genDir)
+
             // Register GenRandomClassTask for each variant
             val variants = HashSet<String>()
             project.handleEachVariant { variant ->
@@ -94,7 +98,7 @@ class CodeGuardPlugin : Plugin<Project> {
                         outputs.upToDateWhen { false }
                     }
                     AppCodeGuardConfig.configJavaCodeGenMainDir(getGenClassBaseOutputDir(project))
-                    val outputDir = createGenClassOutputMainDir()
+                    val outputDir = createGenClassOutputMainDir(project)
                     existGenTask.outputDir = outputDir
                 } else {
                     logMessage("Start exec gen task from exist cache..")
@@ -152,7 +156,7 @@ class CodeGuardPlugin : Plugin<Project> {
                         outputs.upToDateWhen { false }
                     }
                     AppCodeGuardConfig.configJavaCodeGenMainDir(getGenClassBaseOutputDir(project))
-                    val outputDir = createGenClassOutputMainDir()
+                    val outputDir = createGenClassOutputMainDir(project)
                     existGenTask.outputDir = outputDir
                 } else {
                     logMessage("Start exec gen task from exist cache..")
@@ -223,9 +227,9 @@ class CodeGuardPlugin : Plugin<Project> {
         }
     }
 
-    private fun createGenClassOutputMainDir(): File {
-        val path = AppCodeGuardConfig.javaCodeGenMainDir
-        val dir = File(path)
+    private fun createGenClassOutputMainDir(project: Project): File {
+        // 生成到 build 目录下，避免污染源码目录
+        val dir = File(project.buildDir, "generated/codeguard/java")
         if (!dir.exists()) {
             dir.mkdirs()
         }
@@ -252,7 +256,7 @@ class CodeGuardPlugin : Plugin<Project> {
     }
 
     private fun getGenClassBaseOutputDir(project: Project): String =
-        project.projectDir.absolutePath + "/src/main/java/"
+        File(project.buildDir, "generated/codeguard/java").absolutePath
 
     private fun logMessage(message: String) {
         DLogger.error("[CodeGuardPlugin] >>> $message")
