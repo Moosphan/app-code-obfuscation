@@ -13,7 +13,7 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     var mapper: String = ""
     // Used to configure your own code obfuscation dictionary
     var obfuscationDict: String = ""
-        get() = field?.replace("\\", "/") // Note: Fix path bugs on windows.
+        get() = field.replace("\\", "/") // Note: Fix path bugs on windows.
     // Configure the package paths for which you want to enhance obfuscation.
     var processingPackages: HashSet<String> = HashSet()
     // Whether to skip obfuscate abstract classes.

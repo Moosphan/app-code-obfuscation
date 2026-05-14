@@ -1,7 +1,6 @@
 package com.dorck.app.code.guard.transform
 
 import com.android.build.api.transform.*
-import com.android.build.gradle.internal.pipeline.TransformManager
 import com.dorck.app.code.guard.utils.DLogger
 import com.dorck.app.code.guard.utils.IOUtils
 import org.apache.commons.io.FileUtils
@@ -18,6 +17,8 @@ import java.util.jar.JarOutputStream
 
 /**
  * Provide base capabilities for processing code from [JarInput] and [DirectoryInput].
+ * Note: This class uses the deprecated Transform API for AGP 7.x compatibility.
+ * For AGP 8.0+, use AsmClassVisitorFactory instead.
  * @author Dorck
  * @since 2023/11/23
  */
@@ -31,12 +32,17 @@ abstract class BaseTransform : Transform() {
 
     // Config default input types.
     override fun getInputTypes(): MutableSet<QualifiedContent.ContentType> {
-        return TransformManager.CONTENT_CLASS
+        return mutableSetOf(QualifiedContent.DefaultContentType.CLASSES)
     }
 
     // Config default scopes.
+    @Suppress("DEPRECATION")
     override fun getScopes(): MutableSet<in QualifiedContent.Scope> {
-        return TransformManager.SCOPE_FULL_PROJECT
+        return mutableSetOf(
+            QualifiedContent.Scope.PROJECT,
+            QualifiedContent.Scope.SUB_PROJECTS,
+            QualifiedContent.Scope.EXTERNAL_LIBRARIES
+        )
     }
 
     protected abstract fun realTransform(transformInvocation: TransformInvocation)
@@ -116,7 +122,7 @@ abstract class BaseTransform : Transform() {
                 // 字节码插桩
                 val classReader = ClassReader(src.readBytes())
                 val classWriter = ClassWriter(classReader, ClassWriter.COMPUTE_MAXS)
-                val classVisitor = createClassVisitor(Opcodes.ASM5, classWriter)
+                val classVisitor = createClassVisitor(Opcodes.ASM9, classWriter)
                 classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)
                 // 将修改的class文件写到output文件
                 val outputStream = FileOutputStream(src)
@@ -165,7 +171,7 @@ abstract class BaseTransform : Transform() {
                             // 通过asm修改class文件并写入output
                             val classReader = ClassReader(entryIs)
                             val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
-                            val classVisitor = createClassVisitor(Opcodes.ASM5, classWriter)
+                            val classVisitor = createClassVisitor(Opcodes.ASM9, classWriter)
                             classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)
                             destJarFileOs.write(classWriter.toByteArray())
                         } else {

@@ -7,33 +7,20 @@ plugins {
 //    id("cn.dorck.component.publisher") version "1.0.4"
 }
 
-// Load and configure secrets of publication.
-ext["signing.keyId"] = null
-ext["signing.password"] = null
-ext["signing.secretKeyRingFile"] = null
-ext["gradle.publish.key"] = null
-ext["gradle.publish.secret"] = null
-ext["ossrh.username"] = null
-ext["ossrh.password"] = null
-
-// We can get secrets from local.properties or system env.
-val localPropsFile = project.rootProject.file(com.android.SdkConstants.FN_LOCAL_PROPERTIES)
-if (localPropsFile.exists()) {
-    val properties = com.android.build.gradle.internal.cxx.configure.gradleLocalProperties(rootDir)
-    if (properties.isNotEmpty()) {
-        properties.onEach { (key, value) ->
-            ext[key.toString()] = value
-        }
-    }
-} else {
-    ext["signing.keyId"] = System.getenv("GPG_KEY_ID")
-    ext["signing.password"] = System.getenv("GPG_PASSWORD")
-    ext["signing.secretKeyRingFile"] = System.getenv("GPG_SECRET_KEY_RING_FILE")
-    ext["gradle.publish.key"] = System.getenv("GRADLE_PUBLISH_KEY")
-    ext["gradle.publish.secret"] = System.getenv("GRADLE_PUBLISH_SECRET")
-    ext["ossrh.username"] = System.getenv("OSSRH_USERNAME")
-    ext["ossrh.password"] = System.getenv("OSSRH_PASSWORD")
+repositories {
+    google()
+    mavenCentral()
+    maven(uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"))
 }
+
+// Load and configure secrets of publication from system env.
+ext["signing.keyId"] = System.getenv("GPG_KEY_ID")
+ext["signing.password"] = System.getenv("GPG_PASSWORD")
+ext["signing.secretKeyRingFile"] = System.getenv("GPG_SECRET_KEY_RING_FILE")
+ext["gradle.publish.key"] = System.getenv("GRADLE_PUBLISH_KEY")
+ext["gradle.publish.secret"] = System.getenv("GRADLE_PUBLISH_SECRET")
+ext["ossrh.username"] = System.getenv("OSSRH_USERNAME")
+ext["ossrh.password"] = System.getenv("OSSRH_PASSWORD")
 
 group = PluginInfo.group
 version = PluginInfo.version
@@ -65,21 +52,35 @@ gradlePlugin {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        jvmTarget = "11"
+    }
 }
 
 dependencies {
     // Use gradle api
     implementation(gradleApi())
-//    compileOnly(kotlin("stdlib"))
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib:1.5.21")
-    implementation( "commons-io:commons-io:2.11.0")
-    compileOnly("org.ow2.asm:asm:7.0")
-    compileOnly("org.ow2.asm:asm-commons:7.0")
-    compileOnly("com.android.tools.build:gradle:7.2.1")
-    implementation("com.android.tools:common:26.6.3")
-    implementation("com.google.code.gson:gson:2.8.6")
+    // Use kotlin-stdlib without version to be compatible with the project's Kotlin version
+    compileOnly(kotlin("stdlib"))
+    implementation("commons-io:commons-io:2.11.0")
+    // ASM 9.0+ required for AGP 8.0+ (Opcodes.ASM9)
+    compileOnly("org.ow2.asm:asm:9.4")
+    compileOnly("org.ow2.asm:asm-commons:9.4")
+    // AGP 8.0 for AsmClassVisitorFactory / Instrumentation API
+    compileOnly("com.android.tools.build:gradle:8.0.0")
+    implementation("com.android.tools:common:30.0.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+
+    // Test dependencies
+    testImplementation(kotlin("test"))
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.ow2.asm:asm:9.4")
+    testImplementation("org.ow2.asm:asm-commons:9.4")
 }
 
 afterEvaluate {
@@ -147,7 +148,7 @@ object PluginInfo {
     const val group = "cn.dorck"
     const val artifactId = "code-guard-plugin"
     const val implementationClass = "com.dorck.app.code.guard.CodeGuardPlugin"
-    const val version = "0.1.4-beta"
+    const val version = "0.2.0-beta"
 //    const val version = "0.1.1-LOCAL"
     const val displayName = "CodeGuardPlugin"
     const val description = "A plugin for code obfuscation."
