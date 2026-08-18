@@ -83,4 +83,66 @@ class CodeGuardConfigExtensionTest {
         assertTrue(str.contains("maxFieldCount:"))
         assertTrue(str.contains("maxMethodCount:"))
     }
+
+    // ==================== 兼容别名（issue #17） ====================
+
+    @Test
+    fun `generatedMethodCount alias maps to generatedClassMethodCount`() {
+        val extension = CodeGuardConfigExtension()
+        extension.generatedMethodCount = 7
+        assertEquals(7, extension.generatedClassMethodCount)
+        assertEquals(7, extension.generatedMethodCount)
+    }
+
+    @Test
+    fun `isAutoAdapted alias maps to isInsertCountAutoAdapted`() {
+        val extension = CodeGuardConfigExtension()
+        extension.isAutoAdapted = false
+        assertFalse(extension.isInsertCountAutoAdapted)
+        assertFalse(extension.isAutoAdapted)
+    }
+
+    @Test
+    fun `isSkipJarFilesProcessing alias maps to isSkipJar`() {
+        val extension = CodeGuardConfigExtension()
+        extension.isSkipJarFilesProcessing = true
+        assertTrue(extension.isSkipJar)
+        assertTrue(extension.isSkipJarFilesProcessing)
+    }
+
+    @Test
+    fun `isSkipJars alias maps to isSkipJar`() {
+        val extension = CodeGuardConfigExtension()
+        extension.isSkipJars = true
+        assertTrue(extension.isSkipJar)
+        assertTrue(extension.isSkipJars)
+    }
+
+    @Test
+    fun `mapperFile alias maps to mapper`() {
+        val extension = CodeGuardConfigExtension()
+        extension.mapperFile = "mapping.txt"
+        assertEquals("mapping.txt", extension.mapper)
+        assertEquals("mapping.txt", extension.mapperFile)
+    }
+
+    @Test
+    fun `obfuscationDictionary alias maps to obfuscationDict`() {
+        val extension = CodeGuardConfigExtension()
+        extension.obfuscationDictionary = "dict.json"
+        assertEquals("dict.json", extension.obfuscationDict)
+        assertEquals("dict.json", extension.obfuscationDictionary)
+    }
+
+    @Test
+    fun `toString uses real property names`() {
+        val extension = CodeGuardConfigExtension()
+        val str = extension.toString()
+
+        assertTrue(str.contains("generatedClassMethodCount:"))
+        assertTrue(str.contains("isInsertCountAutoAdapted:"))
+        assertTrue(str.contains("isSkipJar:"))
+        assertTrue(str.contains("mapper:"))
+        assertTrue(str.contains("obfuscationDict:"))
+    }
 }

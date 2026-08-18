@@ -105,6 +105,29 @@ class CodeGuardPlugin : Plugin<Project> {
                     existGenTask.generateClass()
                 }
                 preBuildTask.dependsOn(existGenTask)
+
+                // 构建完成后自动清理生成的垃圾代码，避免残留（对齐 AGP 7 分支行为，issue #17）
+                registerAgp8CleanupTask(project, variant.name)
+            }
+        }
+    }
+
+    /**
+     * AGP 8 分支：在对应 variant 的 instrumentation 处理后清理生成的垃圾代码类。
+     * AsmClassVisitorFactory 注册后，AGP 8.0 生成的任务名形如
+     * `transformDebugClassesWithAsm`（`transform<Variant>ClassesWithAsm`），
+     * 我们在其 doLast 中删除已编译进 APK 的生成类源文件。
+     */
+    private fun registerAgp8CleanupTask(project: Project, variantName: String) {
+        val variantSuffix = variantName.capitalize()
+        project.tasks.filter { task ->
+            task.name.startsWith("transform$variantSuffix") && task.name.contains("ClassesWithAsm")
+        }.forEach { task ->
+            task.doLast {
+                DLogger.error("Print configs before clear gen artifacts: ${AppCodeGuardConfig.getAllConfigs()}")
+                AppCodeGuardConfig.batchDeleteGenClass {
+                    AppCodeGuardConfig.reset()
+                }
             }
         }
     }
