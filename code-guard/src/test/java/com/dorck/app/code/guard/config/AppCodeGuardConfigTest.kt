@@ -116,6 +116,35 @@ class AppCodeGuardConfigTest {
         assertTrue(AppCodeGuardConfig.javaGenClassPaths.isEmpty())
     }
 
+    // ==================== 生成类识别（issue #17） ====================
+
+    @Test
+    fun `isGeneratedClass returns true for recorded gen class`() {
+        AppCodeGuardConfig.recordGenClassPath("com.test.x.y", "Ab", "/tmp/Ab.java")
+
+        assertTrue(AppCodeGuardConfig.isGeneratedClass("com.test.x.y.Ab"))
+    }
+
+    @Test
+    fun `isGeneratedClass returns true for inner class of gen class`() {
+        AppCodeGuardConfig.recordGenClassPath("com.test.x.y", "Ab", "/tmp/Ab.java")
+
+        assertTrue(AppCodeGuardConfig.isGeneratedClass("com.test.x.y.Ab\$inner"))
+    }
+
+    @Test
+    fun `isGeneratedClass returns false for normal class`() {
+        AppCodeGuardConfig.recordGenClassPath("com.test.x.y", "Ab", "/tmp/Ab.java")
+
+        assertFalse(AppCodeGuardConfig.isGeneratedClass("com.test.Business"))
+        assertFalse(AppCodeGuardConfig.isGeneratedClass("com.test.x.y.Other"))
+    }
+
+    @Test
+    fun `isGeneratedClass returns false when no gen classes recorded`() {
+        assertFalse(AppCodeGuardConfig.isGeneratedClass("com.test.Any"))
+    }
+
     private fun createTestExtension(): CodeGuardConfigExtension {
         return CodeGuardConfigExtension().apply {
             enable = true

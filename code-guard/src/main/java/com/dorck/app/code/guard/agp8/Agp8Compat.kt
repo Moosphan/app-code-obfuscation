@@ -18,14 +18,38 @@ object Agp8Compat {
 
     /**
      * Check if current AGP version supports the new Instrumentation API (AGP 8.0+).
+     *
+     * Note: We must judge by the AGP version number rather than by class presence,
+     * because `AsmClassVisitorFactory` already exists since AGP 7.0, which means
+     * checking `Class.forName(...)` would mis-detect AGP 7.x as AGP 8+ and then
+     * invoke the Kotlin default-argument method `AndroidComponentsExtension.onVariants`,
+     * whose synthetic `onVariants$default` bridge does NOT exist on AGP 7.x,
+     * causing `NoSuchMethodError` (see issue #16).
      */
     fun isAgp8OrHigher(): Boolean {
         return try {
-            Class.forName("com.android.build.api.instrumentation.AsmClassVisitorFactory")
-            true
-        } catch (e: ClassNotFoundException) {
-            false
+            val version = Class.forName("com.android.Version")
+                .getField("ANDROID_GRADLE_PLUGIN_VERSION")
+                .get(null) as String
+            isAgp8OrHigher(version)
+        } catch (e: Exception) {
+            DLogger.error("Agp8Compat: failed to read AGP version, fallback to class check. err: $e")
+            // Fallback: keep the old class-presence check for safety.
+            try {
+                Class.forName("com.android.build.api.instrumentation.AsmClassVisitorFactory")
+                true
+            } catch (cnf: ClassNotFoundException) {
+                false
+            }
         }
+    }
+
+    /**
+     * 根据 AGP 版本号判断是否 >= 8.0（供单测直接验证，issue #16）。
+     */
+    internal fun isAgp8OrHigher(agpVersion: String): Boolean {
+        val major = agpVersion.substringBefore('.').toIntOrNull() ?: 0
+        return major >= 8
     }
 
     /**

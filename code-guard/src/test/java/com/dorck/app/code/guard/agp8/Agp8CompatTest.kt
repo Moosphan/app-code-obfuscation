@@ -26,4 +26,27 @@ class Agp8CompatTest {
         val result = Agp8Compat.isAgp8OrHigher()
         assertTrue("Result should be a boolean", result is Boolean)
     }
+
+    // ==================== AGP 版本判断（issue #16） ====================
+
+    @Test
+    fun `isAgp8OrHigher returns false for AGP 7x`() {
+        assertFalse(Agp8Compat.isAgp8OrHigher("7.2.2"))
+        assertFalse(Agp8Compat.isAgp8OrHigher("7.0.0"))
+        assertFalse(Agp8Compat.isAgp8OrHigher("7.4.2"))
+    }
+
+    @Test
+    fun `isAgp8OrHigher returns true for AGP 8x`() {
+        assertTrue(Agp8Compat.isAgp8OrHigher("8.0.0"))
+        assertTrue(Agp8Compat.isAgp8OrHigher("8.2.0"))
+        assertTrue(Agp8Compat.isAgp8OrHigher("8.7.0"))
+    }
+
+    @Test
+    fun `isAgp8OrHigher handles invalid version gracefully`() {
+        assertFalse(Agp8Compat.isAgp8OrHigher(""))
+        assertFalse(Agp8Compat.isAgp8OrHigher("unknown"))
+        assertFalse(Agp8Compat.isAgp8OrHigher("abc.1.0"))
+    }
 }

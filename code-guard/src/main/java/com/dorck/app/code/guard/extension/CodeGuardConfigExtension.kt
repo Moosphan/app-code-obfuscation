@@ -50,17 +50,51 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
     // 是否处理 Jar
     var isSkipJar: Boolean = false
 
+    // ==================== 兼容别名（deprecated aliases） ====================
+    // 历史版本/文档/toString 输出中使用的属性名与真实属性名不一致（issue #17），
+    // 这里提供别名 getter/setter 以保证旧配置依然可用，同时保持真实属性名一致。
+
+    /** 别名 of [mapper]（旧配置使用 `mapperFile`） */
+    var mapperFile: String
+        get() = mapper
+        set(value) { mapper = value }
+
+    /** 别名 of [obfuscationDict]（旧配置使用 `obfuscationDictionary`） */
+    var obfuscationDictionary: String
+        get() = obfuscationDict
+        set(value) { obfuscationDict = value }
+
+    /** 别名 of [isInsertCountAutoAdapted]（旧配置使用 `isAutoAdapted`） */
+    var isAutoAdapted: Boolean
+        get() = isInsertCountAutoAdapted
+        set(value) { isInsertCountAutoAdapted = value }
+
+    /** 别名 of [isSkipJar]（旧配置/README 使用 `isSkipJars` 或 `isSkipJarFilesProcessing`） */
+    var isSkipJars: Boolean
+        get() = isSkipJar
+        set(value) { isSkipJar = value }
+
+    /** 别名 of [isSkipJar]（旧 toString 输出使用 `isSkipJarFilesProcessing`） */
+    var isSkipJarFilesProcessing: Boolean
+        get() = isSkipJar
+        set(value) { isSkipJar = value }
+
+    /** 别名 of [generatedClassMethodCount]（文档/toString 输出使用 `generatedMethodCount`） */
+    var generatedMethodCount: Int
+        get() = generatedClassMethodCount
+        set(value) { generatedClassMethodCount = value }
+
     override fun toString(): String {
         return """
             {
                 enable: $enable,
-                mapperFile: $mapper,
-                obfuscationDictionary: $obfuscationDict,
+                mapper: $mapper,
+                obfuscationDict: $obfuscationDict,
                 supportIncremental: $supportIncremental,
                 processingPackages: $processingPackages,
                 isSkipAbsClass: $isSkipAbsClass,
-                isSkipJarFilesProcessing: $isSkipJar
-                isAutoAdapted: $isInsertCountAutoAdapted,
+                isSkipJar: $isSkipJar
+                isInsertCountAutoAdapted: $isInsertCountAutoAdapted,
                 maxFieldCount: $maxFieldCount,
                 maxMethodCount: $maxMethodCount,
                 minMethodCount: $minMethodCount,
@@ -69,7 +103,7 @@ open class CodeGuardConfigExtension: BasePluginExtension() {
                 maxCodeLineCount: $maxCodeLineCount,
                 generatedClassPkg: $generatedClassPkg,
                 generatedClassName: $generatedClassName,
-                generatedMethodCount: $generatedClassMethodCount,
+                generatedClassMethodCount: $generatedClassMethodCount,
                 genClassCount: $genClassCount,
                 excludeRules: $excludeRules,
                 variantConstraints: $variantConstraints,

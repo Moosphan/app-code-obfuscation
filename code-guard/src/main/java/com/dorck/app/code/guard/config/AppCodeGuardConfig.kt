@@ -120,7 +120,9 @@ object AppCodeGuardConfig {
         val genClassPaths = javaGenClassPaths
         DLogger.info("batchDeleteGenClass, need del classes: ${genClassPaths.size}")
         genClassPaths.forEach {
-            val key = extractPackageAndClassName(it.classPath)
+            // Note: 生成类已迁移到 build/generated 目录（不再位于 src/main/java），
+            // 因此这里直接用记录的 pkgName.className 作为 key 查询，而不是从文件路径反推（issue #17）
+            val key = "${it.pkgName}.${it.className}"
             val pgkExist = packageExistStates[key] ?: false
             DLogger.info("batchDeleteGenClass, key => $key is exist: $pgkExist, path: ${it.classPath}")
             deleteGenClass(pgkExist, it)
@@ -152,9 +154,11 @@ object AppCodeGuardConfig {
     private fun getDeleteDir(classPkgName: String): String {
         val mainDir = javaCodeGenMainDir
         val applicationId = AppCodeGuardConfig.applicationId
-        val temp = classPkgName.replace(applicationId, "")
-        val baseDir = applicationId + "." + temp.split(".")[1]
-        return mainDir + baseDir.replace(".", "/") + "/"
+        val temp = classPkgName.removePrefix(applicationId).removePrefix(".")
+        // 取生成包的第一级子包作为删除目录（build/generated/codeguard/java 下）
+        val firstSubPkg = temp.substringBefore('.')
+        val baseDir = "$applicationId.$firstSubPkg"
+        return File(mainDir, baseDir.replace(".", File.separator)).absolutePath + File.separator
     }
 
     private fun extractPackageAndClassName(filePath: String): String? {
@@ -177,6 +181,22 @@ object AppCodeGuardConfig {
             filePath.substring(srcMainJavaIndex + srcMainJava.length + 1, filePath.length - 5)
 
         return packagePath.replace(File.separator, ".")
+    }
+
+    /**
+     * 判断传入的类名（点分格式，如 `com.example.app.x.y.Zz`）是否为插件生成的垃圾代码类。
+     * AGP 8 Instrumentation 分支（[com.dorck.app.code.guard.agp8.CodeGuardClassVisitorFactory]）
+     * 用此方法排除生成类，避免生成类被二次插桩导致方法互相调用形成无限递归（issue #17）。
+     */
+    fun isGeneratedClass(className: String): Boolean {
+        javaGenClassPaths.forEach {
+            val genClzFullName = "${it.pkgName}.${it.className}"
+            if (className == genClzFullName || className.startsWith("$genClzFullName\$")) {
+                DLogger.info("isGeneratedClass, found gen class, ignore processing: $className")
+                return true
+            }
+        }
+        return false
     }
 
     /**

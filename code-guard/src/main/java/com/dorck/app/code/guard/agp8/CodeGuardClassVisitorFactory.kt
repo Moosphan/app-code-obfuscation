@@ -84,6 +84,13 @@ abstract class CodeGuardClassVisitorFactory : AsmClassVisitorFactory<CodeGuardCl
 
         val className = classData.className
 
+        // 排除插件自身生成的垃圾代码类，防止生成类被再次插桩，
+        // 导致生成类方法互相调用形成无限递归（issue #17）
+        if (AppCodeGuardConfig.isGeneratedClass(className)) {
+            DLogger.info("isInstrumentable, skip generated class: $className")
+            return false
+        }
+
         // Use params to check package scope directly (more reliable than AppCodeGuardConfig singleton)
         // Note: className uses dots (e.g., "com.example.MyClass"), not slashes
         val packages = params.processingPackages.get()
