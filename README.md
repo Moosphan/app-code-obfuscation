@@ -20,8 +20,8 @@ Android插入式代码混淆工具，基于ASM在编译期间植入无意义字�
 
 | AGP 版本 | Gradle 版本 | 插件版本 | 实现方式 |
 |---------|------------|---------|---------|
-| 7.0 - 7.4 | 7.0 - 7.6 | 0.2.0-beta | Transform API |
-| 8.0+ | 8.0+ | 0.2.0-beta | AsmClassVisitorFactory |
+| 7.0 - 7.4 | 7.0 - 7.6 | 0.3.0-beta | Transform API |
+| 8.0+ | 8.0+ | 0.3.0-beta | AsmClassVisitorFactory |
 
 > 插件会自动检测当前项目的 AGP 版本，无需手动配置。
 
@@ -36,7 +36,7 @@ Android插入式代码混淆工具，基于ASM在编译期间植入无意义字�
 
 
 ### 快速使用
-> 当前最新版本：`0.2.0-beta`
+> 当前最新版本：`0.3.0-beta`
 
 #### 1. 引入插件
 首先在 `app/build.gradle.kts` 或 `xx_library_module/build.gradle.kts` 中引入混淆插件：
@@ -45,7 +45,7 @@ Android插入式代码混淆工具，基于ASM在编译期间植入无意义字�
 plugins {
     id("com.android.application")
     // 引入增强版混淆插件
-    id("cn.dorck.code.guarder") version "0.2.0-beta"
+    id("cn.dorck.code.guarder") version "0.3.0-beta"
 }
 ```
 
@@ -80,7 +80,9 @@ codeGuard {
 - [x] 增加对随机方法调用参数默认值的随机化处理
 - [x] **支持 AGP 8.0+ (AsmClassVisitorFactory API)**
 - [x] **AGP 7.x/8.0+ 双版本自动检测和适配**
-- [x] **完整的单元测试覆盖 (61个测试用例)**
+- [x] **完整的单元测试覆盖 (75个测试用例)**
+- [x] **修复 AGP 7.x 集成崩溃 (issue [#16](https://github.com/Moosphan/app-code-obfuscation/issues/16))**
+- [x] **修复 AGP 8.x 配置、运行时递归与垃圾代码清理问题 (issue [#17](https://github.com/Moosphan/app-code-obfuscation/issues/17))**
 - [ ] 增加反编译时预防dex2jar的处理
 - [ ] 多线程并行执行，优化混淆速度
 - [ ] APK体积和编译时常影响分析
@@ -95,16 +97,16 @@ codeGuard {
 | `maxFieldCount`            | 类中允许插入变量的数量上限（默认为 `10` ）                 | `int`             |
 | `minMethodCount`           | 类中允许插入方法的数量下限（默认为 `2` ）                  | `int`             |
 | `minFieldCount`            | 类中允许插入变量的数量下限（默认为 `5` ）                  | `int`             |
-| `isInsertCountAutoAdapted` | 是否根据当前类或方法的具体情况自动适配插入的方法或变量的数量           | `boolean`         |
+| `isInsertCountAutoAdapted` | 是否根据当前类或方法的具体情况自动适配插入的方法或变量的数量（兼容旧别名 `isAutoAdapted`）           | `boolean`         |
 | `processingPackages`       | 需要混淆处理的包路径（若未设置，则默认所有路径）                 | `HashSet<String>` |
-| `isSkipJars`               | 是否跳过第三方 jar 的混淆增强（默认为 `true`）            | `boolean`         |
-| `obfuscationDict`          | 自定义的混淆代码字典文件，可自行配置插入的代码和离散程度（格式参照下方详细介绍） | `String`          |
+| `isSkipJar`                | 是否跳过第三方 jar 的混淆增强（默认为 `false`，兼容旧别名 `isSkipJars` / `isSkipJarFilesProcessing`）            | `boolean`         |
+| `obfuscationDict`          | 自定义的混淆代码字典文件，可自行配置插入的代码和离散程度（格式参照下方详细介绍，兼容旧别名 `obfuscationDictionary`） | `String`          |
 | `isSkipAbsClass`           | 是否跳过抽象类的混淆增强（默认为 `true`）                 | `boolean`         |
 | `methodObfuscateEnable`    | 是否对方法进行混淆 （默认为 `true`）                   | `boolean`         |
 | `maxCodeLineCount`         | 方法内允许插入的最大代码行数 （默认为 `6` ）                | `int`             |
 | `generatedClassPkg`        | 生成方法内随机代码调用的目标类的包名（仅在开启方法内混淆时使用）         | `String`          |
 | `generatedClassName`       | 生成方法内随机代码调用的目标类的类名（仅在开启方法内混淆时使用）         | `String`          |
-| `generatedMethodCount`     | 生成方法内随机代码调用的目标类中方法数量（仅在开启方法内混淆时使用）       | `int`             |
+| `generatedClassMethodCount` | 生成方法内随机代码调用的目标类中方法数量（仅在开启方法内混淆时使用，兼容旧别名 `generatedMethodCount`）       | `int`             |
 | `genClassCount`            | 生成随机调用类的数量（可显著降低方法内插入代码的重复率）             | `int`             |
 | `excludeRules`             | 混淆插件处理的排除规则（可理解为白名单，用于控制混淆范围）            | `HashSet<String>` |
 | `variantConstraints`       | 设置插件执行的范围(若不设置则默认所有buildType都会执行)        | `HashSet<String>` |
@@ -126,14 +128,18 @@ codeGuard {
 object Agp8Compat {
     fun isAgp8OrHigher(): Boolean {
         return try {
-            Class.forName("com.android.build.api.instrumentation.AsmClassVisitorFactory")
-            true
-        } catch (e: ClassNotFoundException) {
+            val version = Class.forName("com.android.Version")
+                .getField("ANDROID_GRADLE_PLUGIN_VERSION")
+                .get(null) as String
+            val major = version.substringBefore('.').toIntOrNull() ?: 0
+            major >= 8
+        } catch (e: Exception) {
             false
         }
     }
 }
 ```
+> 说明：按 AGP 主版本号判断（而非检测 `AsmClassVisitorFactory` 类是否存在）。该类自 AGP 7.0 起就已存在，若按类是否存在判断，会把 AGP 7.x 误判为 AGP 8+，进而调用 AGP 7.x 不存在的 `onVariants$default` 合成方法导致崩溃（issue [#16](https://github.com/Moosphan/app-code-obfuscation/issues/16)）。
 
 ### Todo & Bugfix
 - [X] 偶现打开App后闪退，提示找不到生成的调用类（由于构建cache导致Task未执行）
@@ -142,6 +148,8 @@ object Agp8Compat {
 - [x] 支持自动清除随机调用类(监听编译失败的时机)
 - [x] 修复生成随机变量或方法名与内置关键字冲突导致的编译问题 [issue#8](https://github.com/Moosphan/app-code-obfuscation/issues/8)
 - [x] **适配 AGP 8.0+ 版本 (AsmClassVisitorFactory)**
+- [x] **修复 AGP 7.x 集成崩溃，按版本号正确判断 AGP 8+ [issue#16](https://github.com/Moosphan/app-code-obfuscation/issues/16)**
+- [x] **修复配置属性名不一致、生成类二次插桩递归崩溃、生成代码残留问题 [issue#17](https://github.com/Moosphan/app-code-obfuscation/issues/17)**
 - [ ] 执行多变体构建出现 `ClassNotFound` 问题，如 `assemble`(暂时强制绑定执行类型为Release)
 - [ ] 打 `installRelease` 时第二次会闪退，提示 `java.lang.NoClassDefFoundError` 找不到生成类 (原因推测：由于缓存原因dex没有清除并重新生成，导致还残留上一次的生成的字节码调用信息)
 - [ ] 支持手动执行Task来输出当前配置信息，方便排查问题

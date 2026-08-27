@@ -20,8 +20,8 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 
 | AGP Version | Gradle Version | Plugin Version | Implementation |
 |------------|---------------|----------------|----------------|
-| 7.0 - 7.4 | 7.0 - 7.6 | 0.2.0-beta | Transform API |
-| 8.0+ | 8.0+ | 0.2.0-beta | AsmClassVisitorFactory |
+| 7.0 - 7.4 | 7.0 - 7.6 | 0.3.0-beta | Transform API |
+| 8.0+ | 8.0+ | 0.3.0-beta | AsmClassVisitorFactory |
 
 > The plugin automatically detects the AGP version of your project, no manual configuration required.
 
@@ -35,7 +35,7 @@ Here, take the [`SimpleKtClass.kt`](./app/src/main/java/com/dorck/app/obfuscate/
 | <img src="./art/app_code_origin.png" alt="origin_preview" style="zoom:107%;" /> | ![obfuscated_preview](./art/code_obfuscated_beta.png) |
 
 ### Quick start
-> Latest version: `0.2.0-beta`
+> Latest version: `0.3.0-beta`
 
 #### 1. Import plugin
 First, import the obfuscation plugin in `app/build.gradle.kts` or `xx_library_module/build.gradle.kts`:
@@ -43,7 +43,7 @@ First, import the obfuscation plugin in `app/build.gradle.kts` or `xx_library_mo
 plugins {
     id("com.android.application")
     // Import enhanced obfuscation plugin
-    id("cn.dorck.code.guarder") version "0.2.0-beta"
+    id("cn.dorck.code.guarder") version "0.3.0-beta"
 }
 ```
 
@@ -77,7 +77,9 @@ For more features, please refer to the configuration item column for specific in
 - [x] Add randomization of default parameter values for random method calls
 - [x] **Support AGP 8.0+ (AsmClassVisitorFactory API)**
 - [x] **Automatic detection and adaptation for AGP 7.x/8.0+**
-- [x] **Complete unit test coverage (61 test cases)**
+- [x] **Complete unit test coverage (75 test cases)**
+- [x] **Fix AGP 7.x integration crash (issue [#16](https://github.com/Moosphan/app-code-obfuscation/issues/16))**
+- [x] **Fix AGP 8.x configuration, runtime recursion and junk-code cleanup issues (issue [#17](https://github.com/Moosphan/app-code-obfuscation/issues/17))**
 - [ ] Optimize the obfuscation speed by executing in parallel
 - [ ] APK size and compile time impact analysis
 - [ ] Custom obfuscation dictionary function
@@ -90,16 +92,16 @@ For more features, please refer to the configuration item column for specific in
 | `maxFieldCount` | The upper limit of the number of variables allowed to be inserted in a class (default is `10`) | `int` |
 | `minMethodCount` | The lower limit of the number of methods allowed to be inserted in a class (default is `2`) | `int` |
 | `minFieldCount` | The lower limit of the number of variables allowed to be inserted in a class (default is `5`) | `int` |
-| `isInsertCountAutoAdapted` | Whether to automatically adapt the number of methods or variables to be inserted according to the specific situation of the current class or method | `boolean` |
+| `isInsertCountAutoAdapted` | Whether to automatically adapt the number of methods or variables to be inserted according to the specific situation of the current class or method (legacy alias: `isAutoAdapted`) | `boolean` |
 | `processingPackages` | The package path that needs to be obfuscated (if not set, the default is all paths) | `HashSet<String>` |
-| `isSkipJars` | Whether to skip the obfuscation enhancement of third-party jars (default is `true`) | `boolean` |
-| `obfuscationDict` | Custom obfuscation code dictionary, you can configure the inserted code and the degree of dispersion (see the detailed introduction below for the format) | `String` |
+| `isSkipJar` | Whether to skip the obfuscation enhancement of third-party jars (default is `false`, legacy aliases: `isSkipJars` / `isSkipJarFilesProcessing`) | `boolean` |
+| `obfuscationDict` | Custom obfuscation code dictionary, you can configure the inserted code and the degree of dispersion (see the detailed introduction below for the format, legacy alias: `obfuscationDictionary`) | `String` |
 | `isSkipAbsClass` | Whether to skip the obfuscation enhancement of abstract classes (default is `true`) | `boolean` |
 | `methodObfuscateEnable` | Whether to obfuscate methods (default is `true`) | `boolean` |
 | `maxCodeLineCount` | The maximum number of code lines allowed to be inserted in a method (default is `6`) | `int` |
 | `generatedClassPkg` | The package name of the target class that calls the random code in the method (only used when method obfuscation is enabled) | `String` |
 | `generatedClassName` | The class name of the target class that calls the random code in the method (only used when method obfuscation is enabled) | `String` |
-| `generatedMethodCount` | The number of methods in the target class that calls the random code in the method (only used when method obfuscation is enabled) | `int` |
+| `generatedClassMethodCount` | The number of methods in the target class that calls the random code in the method (only used when method obfuscation is enabled, legacy alias: `generatedMethodCount`) | `int` |
 | `genClassCount` | The number of randomly called classes (can significantly reduce the repetition rate of code inserted in methods) | `int` |
 | `excludeRules` | The obfuscation plugin processing exclusion rules (can be understood as a whitelist, used to control the obfuscation scope) | `HashSet<String>` |
 | `variantConstraints` | Set the scope of the plugin execution (if not set, the default is that all buildTypes will be executed) | `HashSet<String>` |
@@ -121,14 +123,18 @@ For more features, please refer to the configuration item column for specific in
 object Agp8Compat {
     fun isAgp8OrHigher(): Boolean {
         return try {
-            Class.forName("com.android.build.api.instrumentation.AsmClassVisitorFactory")
-            true
-        } catch (e: ClassNotFoundException) {
+            val version = Class.forName("com.android.Version")
+                .getField("ANDROID_GRADLE_PLUGIN_VERSION")
+                .get(null) as String
+            val major = version.substringBefore('.').toIntOrNull() ?: 0
+            major >= 8
+        } catch (e: Exception) {
             false
         }
     }
 }
 ```
+> Note: The AGP major version is used for the check (instead of detecting whether the `AsmClassVisitorFactory` class exists). Since that class has existed since AGP 7.0, a class-presence check would mis-detect AGP 7.x as AGP 8+, then invoke the `onVariants$default` synthetic method that does not exist on AGP 7.x and crash (issue [#16](https://github.com/Moosphan/app-code-obfuscation/issues/16)).
 
 ### Testing
 
