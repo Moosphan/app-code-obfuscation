@@ -32,6 +32,7 @@ class CodeGuardPlugin : Plugin<Project> {
         project.logger.error("get current build variant: $curBuildVariant")
         AppCodeGuardConfig.configCurrentBuildVariant(curBuildVariant)
         clearGenArtifactsWhenFailed(project)
+        registerGeneratedSourceDirectory(project)
 
         if (Agp8Compat.isAgp8OrHigher()) {
             // AGP 8.0+ approach: use AsmClassVisitorFactory (Instrumentation API)
@@ -62,10 +63,6 @@ class CodeGuardPlugin : Plugin<Project> {
 
             registerClearGenTask(project)
             registerReadConfigTask(project)
-
-            // 将生成目录添加到源码集，避免污染 src/main/java
-            val genDir = File(project.buildDir, "generated/codeguard/java")
-            project.android().sourceSets.getByName("main").java.srcDir(genDir)
 
             // Register GenRandomClassTask for each variant
             val variants = HashSet<String>()
@@ -252,11 +249,21 @@ class CodeGuardPlugin : Plugin<Project> {
 
     private fun createGenClassOutputMainDir(project: Project): File {
         // 生成到 build 目录下，避免污染源码目录
-        val dir = File(project.buildDir, "generated/codeguard/java")
+        val dir = GeneratedSourceDirectory.fromBuildDir(project.buildDir)
         if (!dir.exists()) {
             dir.mkdirs()
         }
         return dir
+    }
+
+    /**
+     * Generated classes are called from transformed application bytecode, so they must be
+     * compiled in both the AGP 7 Transform and AGP 8 Instrumentation pipelines.
+     */
+    private fun registerGeneratedSourceDirectory(project: Project) {
+        project.android().sourceSets.getByName("main").java.srcDir(
+            GeneratedSourceDirectory.fromBuildDir(project.buildDir)
+        )
     }
 
     private fun extractBuildVariant(project: Project): String {
@@ -279,7 +286,7 @@ class CodeGuardPlugin : Plugin<Project> {
     }
 
     private fun getGenClassBaseOutputDir(project: Project): String =
-        File(project.buildDir, "generated/codeguard/java").absolutePath
+        GeneratedSourceDirectory.fromBuildDir(project.buildDir).absolutePath
 
     private fun logMessage(message: String) {
         DLogger.error("[CodeGuardPlugin] >>> $message")
