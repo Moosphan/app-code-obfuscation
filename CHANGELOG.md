@@ -4,6 +4,13 @@
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
+## [0.3.1-beta] - 2026-09-01
+
+### 修复
+
+- **修复 AGP 7 构建时生成类未打包问题（issue [#19](https://github.com/Moosphan/app-code-obfuscation/issues/19)）**
+  - 抽出 `GeneratedSourceDirectory` 统一管理生成类目录（`generated/codeguard/java`），确保 AGP 7（Transform API）构建时生成的垃圾代码类能正确参与编译并打包进 APK。
+
 ## [0.3.0-beta] - 2026-08-18
 
 ### 修复

@@ -20,8 +20,8 @@ Android plug-in code obfuscation tool, based on ASM, implants meaningless byteco
 
 | AGP Version | Gradle Version | Plugin Version | Implementation |
 |------------|---------------|----------------|----------------|
-| 7.0 - 7.4 | 7.0 - 7.6 | 0.3.0-beta | Transform API |
-| 8.0+ | 8.0+ | 0.3.0-beta | AsmClassVisitorFactory |
+| 7.0 - 7.4 | 7.0 - 7.6 | 0.3.1-beta | Transform API |
+| 8.0+ | 8.0+ | 0.3.1-beta | AsmClassVisitorFactory |
 
 > The plugin automatically detects the AGP version of your project, no manual configuration required.
 
@@ -35,7 +35,7 @@ Here, take the [`SimpleKtClass.kt`](./app/src/main/java/com/dorck/app/obfuscate/
 | <img src="./art/app_code_origin.png" alt="origin_preview" style="zoom:107%;" /> | ![obfuscated_preview](./art/code_obfuscated_beta.png) |
 
 ### Quick start
-> Latest version: `0.3.0-beta`
+> Latest version: `0.3.1-beta`
 
 #### 1. Import plugin
 First, import the obfuscation plugin in `app/build.gradle.kts` or `xx_library_module/build.gradle.kts`:
@@ -43,7 +43,7 @@ First, import the obfuscation plugin in `app/build.gradle.kts` or `xx_library_mo
 plugins {
     id("com.android.application")
     // Import enhanced obfuscation plugin
-    id("cn.dorck.code.guarder") version "0.3.0-beta"
+    id("cn.dorck.code.guarder") version "0.3.1-beta"
 }
 ```
 

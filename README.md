@@ -20,8 +20,8 @@ Android插入式代码混淆工具，基于ASM在编译期间植入无意义字�
 
 | AGP 版本 | Gradle 版本 | 插件版本 | 实现方式 |
 |---------|------------|---------|---------|
-| 7.0 - 7.4 | 7.0 - 7.6 | 0.3.0-beta | Transform API |
-| 8.0+ | 8.0+ | 0.3.0-beta | AsmClassVisitorFactory |
+| 7.0 - 7.4 | 7.0 - 7.6 | 0.3.1-beta | Transform API |
+| 8.0+ | 8.0+ | 0.3.1-beta | AsmClassVisitorFactory |
 
 > 插件会自动检测当前项目的 AGP 版本，无需手动配置。
 
@@ -36,7 +36,7 @@ Android插入式代码混淆工具，基于ASM在编译期间植入无意义字�
 
 
 ### 快速使用
-> 当前最新版本：`0.3.0-beta`
+> 当前最新版本：`0.3.1-beta`
 
 #### 1. 引入插件
 首先在 `app/build.gradle.kts` 或 `xx_library_module/build.gradle.kts` 中引入混淆插件：
@@ -45,7 +45,7 @@ Android插入式代码混淆工具，基于ASM在编译期间植入无意义字�
 plugins {
     id("com.android.application")
     // 引入增强版混淆插件
-    id("cn.dorck.code.guarder") version "0.3.0-beta"
+    id("cn.dorck.code.guarder") version "0.3.1-beta"
 }
 ```
 
